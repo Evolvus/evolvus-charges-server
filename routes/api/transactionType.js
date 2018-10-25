@@ -1,4 +1,4 @@
-var transactionType = require("@teamtagevo/evolvus-charges-transaction-type");
+var transactionType = require("@evolvus/evolvus-charges-transaction-type");
 const _ = require("lodash");
 
 var attributes = [

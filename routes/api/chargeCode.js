@@ -1,6 +1,6 @@
-var chargeCode = require("@teamtagevo/evolvus-charges-charge-code");
-var schemeType = require("@teamtagevo/evolvus-charges-scheme-type");
-var transactionType = require("@teamtagevo/evolvus-charges-transaction-type");
+var chargeCode = require("@evolvus/evolvus-charges-charge-code");
+var schemeType = require("@evolvus/evolvus-charges-scheme-type");
+var transactionType = require("@evolvus/evolvus-charges-transaction-type");
 
 const _ = require("lodash");
 
