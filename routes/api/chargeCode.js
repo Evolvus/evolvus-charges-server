@@ -36,29 +36,28 @@ module.exports = router => {
       };
       try {
         var object = _.pick(req.body, coreAttributes);
-        if(object.amount!=null){
-            object.amount = object.amount.toFixed(2);
+        if (object.amount != null) {
+          object.amount = object.amount.toFixed(2);
         }
         object.amount = Number(object.amount);
         object.createdBy = object.updatedBy = req.header(userHeader);
         object.updatedDateAndTime = object.createdDateAndTime = new Date().toISOString();
         var schemeTypeFilter = {
-          name: object.schemeType 
+          name: object.schemeType
         };
         var transactionTypeFilter = {
           name: object.transactionType
         };
         Promise.all([
-          schemeType.find(schemeTypeFilter, {}, 0, 1, req.ip, object.createdBy),
-          transactionType.find(
-            transactionTypeFilter,
-            {},
-            0,
-            1,
-            req.ip,
-            object.createdBy
-          )
-        ])
+            schemeType.find(schemeTypeFilter, {}, 0, 1, req.ip, object.createdBy),
+            transactionType.find(
+              transactionTypeFilter, {},
+              0,
+              1,
+              req.ip,
+              object.createdBy
+            )
+          ])
           .then(findResponse => {
             if (_.isEmpty(findResponse[0])) {
               throw new Error("Invalid Scheme Type");
@@ -89,7 +88,6 @@ module.exports = router => {
             res.status(400).send(response);
           });
       } catch (error) {
-          console.log("error", error);   
         response.status = "400";
         response.data = error;
         response.description = "Failed to save";
@@ -97,7 +95,6 @@ module.exports = router => {
       }
     })
     .get((req, res, next) => {
-      console.log("+++++++++++++++++++++++++++++++");  
       var response = {
         status: "200",
         data: {},
@@ -107,12 +104,14 @@ module.exports = router => {
       try {
         var createdBy = req.header(userHeader);
         var ipAddress = req.header(ipHeader);
-        var filter = _.pick(req.query, filterAttributes);
+        var filterValues = _.pick(req.query, filterAttributes);
+        var filter = _.omitBy(filterValues, function(value, key) {
+          return value.startsWith("undefined");
+        });
         var limit = _.get(req.query, "limit", LIMIT);
         var skipCount = 0;
         var sort = _.get(req.query, "sort", {});
         var orderby = sortable(sort);
-
         chargeCode
           .find(filter, orderby, skipCount, limit, req.ip, createdBy)
           .then(findResponse => {
@@ -122,29 +121,27 @@ module.exports = router => {
             res.status(200).send(response);
           })
           .catch(error => {
-            console.log(".catch", error);
             response.status = "400";
             response.data = error;
             response.description = `Failed to Fetch : ${error.message}`;
             res.status(400).send(response);
           });
       } catch (error) {
-        console.log(" try catch", error);
         response.status = "400";
         response.data = error;
         response.description = "Failed to Fetch Charge Codes";
         res.status(400).send(response);
       }
     });
-    router.route('/chargeCode/:name')
+  router.route('/chargeCode/:name')
     .put((req, res, next) => {
       var response = {
-        status: "200", 
+        status: "200",
         data: {},
         description: ""
       };
-      try { 
-        
+      try {
+
         var object = _.pick(req.body, coreAttributes);
         object.amount = Number(object.amount.toFixed(2));
         object.createdBy = object.updatedBy = req.header(userHeader);
@@ -156,23 +153,23 @@ module.exports = router => {
           name: object.transactionType
         };
 
-              chargeCode 
-                .update(object, req.params.name, req.ip, "")
-                .then(result => {
-                  response.data = result;
-                  response.description = `Modified ${
-                    object.name 
+        chargeCode
+          .update(object, req.params.name, req.ip, "")
+          .then(result => {
+            response.data = result;
+            response.description = `Modified ${
+                    object.name
                   } Charge Code successfully`;
-                  res.status(200).send(response);
-                })
-                .catch(e => {
-                  response.status = "400";
-                  response.data = e.toString();
-                  response.description = "Failed to save";
-                  res.status(400).send(response);
-                });
-            
-     
+            res.status(200).send(response);
+          })
+          .catch(e => {
+            response.status = "400";
+            response.data = e.toString();
+            response.description = "Failed to save";
+            res.status(400).send(response);
+          });
+
+
       } catch (error) {
         response.status = "400";
         response.data = error;
@@ -190,9 +187,13 @@ function sortable(sort) {
     var values = sort.split(",");
     var result = sort.split(",").reduce((temp, sortParam) => {
       if (sortParam.charAt(0) == "-") {
-        return _.assign(temp, _.fromPairs([[sortParam.replace(/-/, ""), -1]]));
+        return _.assign(temp, _.fromPairs([
+          [sortParam.replace(/-/, ""), -1]
+        ]));
       } else {
-        return _.assign(_.fromPairs([[sortParam.replace(/\ /, ""), 1]]));
+        return _.assign(_.fromPairs([
+          [sortParam.replace(/\ /, ""), 1]
+        ]));
       }
     }, {});
     return result;
