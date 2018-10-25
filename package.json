@@ -10,13 +10,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@evolvus/evolvus-docket-client": "^1.0.3",
-    "@evolvus/evolvus-mongo-dao": "^1.0.1",
+    "@evolvus/evolvus-charges-corporate-linkage": "^1.0.1",
     "@evolvus/evolvus-charges-gl-parameters": "^1.0.0",
     "@evolvus/evolvus-charges-scheme-type": "^1.0.0",
+    "@evolvus/evolvus-charges-transaction-type": "^1.0.2",
+    "@evolvus/evolvus-docket-client": "^1.0.3",
+    "@evolvus/evolvus-mongo-dao": "^1.0.1",
+    "axios": "^0.18.0",
     "body-parser": "^1.18.3",
     "debug": "^4.1.0",
     "express": "^4.16.4",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "mongoose": "^5.3.6",
+    "mongoose-double": "0.0.1"
   }
 }

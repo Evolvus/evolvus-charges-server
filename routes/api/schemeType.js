@@ -27,7 +27,7 @@ module.exports = (router) => {
                 object.createdDateAndTime=new Date().toISOString();
                 object.updatedBy = object.createdBy;
                 object.updatedDateAndTime = object.createdDateAndTime;
-                schemeType.save(object, req.ip, "").then((result) => {
+                schemeType.save(object, ipAddress,createdBy).then((result) => {
                     response.data = result;
                     response.description = "Saved successfully";
                     res.status(200).send(response);

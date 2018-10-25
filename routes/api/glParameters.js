@@ -1,7 +1,5 @@
 var debug = require("debug")("evolvus-charges-server:server");
 var glParameters = require("@evolvus/evolvus-charges-gl-parameters");
-var schemeType = require("@evolvus/evolvus-charges-scheme-type");
-
 const _ = require("lodash");
 
 const LIMIT = process.env.LIMIT || 20;
@@ -12,7 +10,7 @@ const ORDER_BY = process.env.ORDER_BY || {
 const userHeader = "X-USER";
 const ipHeader = "X-IP-HEADER";
 
-var attributes = ["schemeType", "chargesAccount", "GSTAccount", "chargesAccountNarration", "GSTAccountNarration", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
+var attributes = ["schemeType", "GSTRate", "chargesAccount", "GSTAccount", "chargesAccountNarration", "GSTAccountNarration", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
 
 module.exports = (router) => {
     router.route('/glParameter')
@@ -31,33 +29,17 @@ module.exports = (router) => {
                 object.createdDateAndTime = new Date().toISOString();
                 object.updatedBy = object.createdBy;
                 object.updatedDateAndTime = object.createdDateAndTime;
-                let filter = {
-                    "name": object.schemeType
-                };
-                schemeType.find(filter, {}, 0, 1, ipAddress, createdBy)
-                    .then((result) => {
-                        if (_.isEmpty(result)) {
-                            throw new Error("Invalid Scheme Type.");
-                        } else {
-                            glParameters.save(object, ipAddress, createdBy).then((result) => {
-                                response.data = result;
-                                response.description = "Saved successfully";
-                                res.status(200).send(response);
-                            }).catch(e => {
-                                debug(`Saving GL parameters promise failed: ${e}`);
-                                response.status = "400";
-                                response.data = e.toString();
-                                response.description = "Failed to save";
-                                res.status(400).send(response);
-                            });
-                        }
-                    }).catch(e => {
-                        debug(`Finding Scheme Type promise failed: ${e}`);
-                        response.status = "400";
-                        response.data = e.toString();
-                        response.description = "Failed to save";
-                        res.status(400).send(response);
-                    });
+                glParameters.save(object, ipAddress, createdBy).then((result) => {
+                    response.data = result;
+                    response.description = `Saved GL Account Parameters successfully`;
+                    res.status(200).send(response);
+                }).catch(e => {
+                    debug(`Saving GL parameters promise failed: ${e}`);
+                    response.status = "400";
+                    response.data = e.toString();
+                    response.description = "Failed to save";
+                    res.status(400).send(response);
+                });
             } catch (error) {
                 debug(`Try-catch failed: ${error}`);
                 response.status = "400";
@@ -72,6 +54,8 @@ module.exports = (router) => {
                 data: [],
                 description: ""
             };
+            const createdBy = req.header(userHeader);
+            const ipAddress = req.header(ipHeader);
             try {
                 var limit = _.get(req.query, "limit", LIMIT);
                 var skipCount = 0;
