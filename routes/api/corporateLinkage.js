@@ -13,7 +13,8 @@ const ipHeader = "X-IP-HEADER";
 
 var corporateURL = process.env.CORPORATE_URL || "http://10.10.69.193:3031/corporateUtilityCodes";
 
-var attributes = ["utilityCode", "chargePlan", "corporateAccount", "billingAddress", "emailId", "GSTINnumber", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
+var attributes = ["corporateName", "utilityCode", "chargePlan", "corporateAccount", "billingAddress", "emailId", "GSTINnumber", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
+var filterAttributes = ["corporateName", "utilityCode", "chargePlan"]
 
 var instance = axios.create({
     baseURL: corporateURL,
@@ -31,45 +32,49 @@ module.exports = (router) => {
             const createdBy = req.header(userHeader);
             const ipAddress = req.header(ipHeader);
             try {
-                let flag=false;
                 instance.get(corporateURL).then((resp) => {
-                    for(var object of resp.data) {  
-                        console.log(object.achCode);
-                        
-                        if(object.achCode === req.body.utilityCode) {
-                            flag=true;
-                            break;
+                    if (resp.data && res.data.data) {
+                        var selectedUtility = resp.data.data.filter((corporateData) => {
+                            return corporateData.corporateName == req.body.corporateName
+                        }).filter((selectedCorporate) => {
+                            return selectedCorporate.achCode == req.body.utilityCode
+                        });
+                        if (selectedUtility.length != 0) {
+                            var object = _.pick(req.body, attributes);
+                            debug(`Input object is: ${JSON.stringify(object)}`);
+                            object.createdBy = createdBy;
+                            object.createdDateAndTime = new Date().toISOString();
+                            object.updatedBy = object.createdBy;
+                            object.updatedDateAndTime = object.createdDateAndTime;
+                            corporateLinkage.save(object, ipAddress, createdBy).then((result) => {
+                                response.data = result;
+                                response.description = `Saved successfully`;
+                                res.status(200).send(response);
+                            }).catch(e => {
+                                debug(`Saving GL parameters promise failed: ${e}`);
+                                response.status = "400";
+                                response.data = {};
+                                response.description = e.toString();
+                                res.status(400).send(response);
+                            });
+                        } else {
+                            throw new Error(`${req.body.corporateName} Corporate not found matching the Utility code ${req.body.utilityCode}`);
                         }
+                    } else {
+                        throw new Error("Server error.Please contact Administrator.");
                     }
-
-                    console.log("FLAG",flag);
-                    
-                var object = _.pick(req.body, attributes);
-                debug(`Input object is: ${JSON.stringify(object)}`);
-                object.createdBy = createdBy;
-                object.createdDateAndTime = new Date().toISOString();
-                object.updatedBy = object.createdBy;
-                object.updatedDateAndTime = object.createdDateAndTime;
-                corporateLinkage.save(object, ipAddress, createdBy).then((result) => {
-                    response.data = result;
-                    response.description = `Saved successfully`;
-                    res.status(200).send(response);
-                }).catch(e => {
-                    debug(`Saving GL parameters promise failed: ${e}`);
+                }).catch((e) => {
+                    debug(`Fetching corporate details promise failed: ${e}`);
                     response.status = "400";
-                    response.data = e.toString();
-                    response.description = "Failed to save";
+                    response.data = {};
+                    response.description = e.toString();
                     res.status(400).send(response);
                 });
-            }).catch((e)=> {
-                console.log(e);
-                res.status(400).send(e)
-            })
             } catch (error) {
                 debug(`Try-catch failed: ${error}`);
                 response.status = "400";
-                response.data = error;
-                response.description = "Failed to save";
+                response.data = {};
+                response.description = error;
                 res.status(400).send(response);
             }
         })
@@ -86,7 +91,11 @@ module.exports = (router) => {
                 var skipCount = 0;
                 var sort = _.get(req.query, "sort", {});
                 var orderby = sortable(sort);
-                corporateLinkage.find({}, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
+                var filterValues = _.pick(req.query, filterAttributes);
+                var filter = _.omitBy(filterValues, function (value, key) {
+                    return value.startsWith("undefined");
+                });
+                corporateLinkage.find(filter, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
                     response.description = "";
                     response.data = result;
                     res.status(200).send(response);
