@@ -33,7 +33,7 @@ module.exports = (router) => {
             const ipAddress = req.header(ipHeader);
             try {
                 instance.get(corporateURL).then((resp) => {
-                    if (resp.data && res.data.data) {
+                    if (resp.data && resp.data.data) {
                         var selectedUtility = resp.data.data.filter((corporateData) => {
                             return corporateData.corporateName == req.body.corporateName
                         }).filter((selectedCorporate) => {
