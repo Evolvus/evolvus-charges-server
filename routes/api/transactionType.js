@@ -13,8 +13,11 @@ var attributes = [
 const LIMIT = process.env.LIMIT || 20;
 const PAGE_SIZE = 20;
 const ORDER_BY = process.env.ORDER_BY || {
-updatedDateAndTime: -1
-};  
+  updatedDateAndTime: -1
+};
+
+const userHeader = "X-USER";
+const ipHeader = "X-IP-HEADER";
 
 module.exports = router => {
   router
@@ -25,18 +28,22 @@ module.exports = router => {
         data: {},
         description: ""
       };
+      const createdBy = req.header(userHeader);
+      const ipAddress = req.header(ipHeader);
       try {
         var object = _.pick(req.body, attributes);
+        object.createdBy = createdBy;
+        object.createdDateAndTime = new Date().toISOString();
         object.updatedBy = object.createdBy;
         object.updatedDateAndTime = object.createdDateAndTime;
         transactionType
-          .save(object, req.ip, "")
+          .save(object, ipAddress, createdBy)
           .then(result => {
             response.data = result;
             response.description = "Saved successfully";
             res.status(200).send(response);
           })
-          .catch(e => {  
+          .catch(e => {
             response.status = "400";
             response.data = e.toString();
             response.description = "Failed to save";
@@ -73,33 +80,33 @@ module.exports = router => {
         response.status = "400";
         response.data = error.toString();
         response.description = "Failed to fetch Transaction Types";
-        res.status(400).send(response); 
+        res.status(400).send(response);
       }
     });
 };
-  
+
 function sortable(sort) {
-    if (typeof sort === undefined ||
-    sort == null) { 
+  if (typeof sort === undefined ||
+    sort == null) {
     return ORDER_BY;
-    }
-    if (typeof sort === 'string') {
+  }
+  if (typeof sort === 'string') {
     var values = sort.split(",");
     var result = sort.split(",")
-    .reduce((temp, sortParam) => {
-    if (sortParam.charAt(0) == "-") {
-    return _.assign(temp, _.fromPairs([ 
-    [sortParam.replace(/-/, ""), -1]
-    ]));
-    } else {
-    return _.assign(_.fromPairs([  
-    [sortParam.replace(/\ /, ""), 1]
-    ]));
-    }
-    }, {});
+      .reduce((temp, sortParam) => {
+        if (sortParam.charAt(0) == "-") {
+          return _.assign(temp, _.fromPairs([
+            [sortParam.replace(/-/, ""), -1]
+          ]));
+        } else {
+          return _.assign(_.fromPairs([
+            [sortParam.replace(/\ /, ""), 1]
+          ]));
+        }
+      }, {});
     return result;
-    } else {
+  } else {
     return ORDER_BY;
-    }
-    }
- 
+  }
+}
+
