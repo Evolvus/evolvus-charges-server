@@ -14,10 +14,11 @@ var coreAttributes = [
   "amount",
   "description",
   "schemeType",
-  "transactionType"
+  "transactionType",
+  "createdBy"
 ];
 
-var filterAttributes = ["name", "type", "schemeType", "transactionType"];
+var filterAttributes = ["name", "type", "schemeType", "transactionType", "createdBy", "amount"];
 
 const LIMIT = process.env.LIMIT || 20;
 const PAGE_SIZE = 20;
@@ -108,12 +109,13 @@ module.exports = router => {
         var filter = _.omitBy(filterValues, function(value, key) {
           return value.startsWith("undefined");
         });
+
         var limit = _.get(req.query, "limit", LIMIT);
         var skipCount = 0;
         var sort = _.get(req.query, "sort", {});
         var orderby = sortable(sort);
         chargeCode
-          .find(filter, orderby, skipCount, limit, req.ip, createdBy)
+          .find(filter, orderby, skipCount, limit, ipAddress, createdBy)
           .then(findResponse => {
             response.status = "200";
             response.data = findResponse;
