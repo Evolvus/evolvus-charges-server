@@ -3,6 +3,8 @@ const _ = require("lodash");
 
 var attributes = [
   "name",
+  "code",
+  "type",
   "schemeType",
   "createdBy",
   "createdDateAndTime",

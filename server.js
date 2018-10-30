@@ -10,7 +10,7 @@ const debug = require("debug")("evolvus-charges-server:server");
 const express = require("express");
 const bodyParser = require("body-parser");
 const connection = require("@evolvus/evolvus-mongo-dao").connection;
-
+const axios=require("axios");
 const app = express();
 const router = express.Router();
 
@@ -37,6 +37,30 @@ app.use(bodyParser.json({
 require("./routes/main")(router);
 
 app.use("/api", router);
+
+/*
+* * * * * *
+┬ ┬ ┬ ┬ ┬ ┬
+│ │ │ │ │ │
+│ │ │ │ │ └ day of week (0 - 7) (0 or 7 is Sun)
+│ │ │ │ └───── month (1 - 12)
+│ │ │ └────────── day of month (1 - 31)
+│ │ └─────────────── hour (0 - 23)
+│ └──────────────────── minute (0 - 59)
+└───────────────────────── second (0 - 59, OPTIONAL)
+*/
+var schedule = require('node-schedule');
+
+var j = schedule.scheduleJob('30 * * * * * ', function(){
+  axios.post("http://192.168.1.100:9292/api/generateBill",{},{headers:{
+    "X-USER":"SYSTEM",
+    "X-IP-HEADER":"192.168.1.100"
+  }}).then((res)=> {
+    console.log(res);
+  }).catch(e=> {
+    console.log(e)
+  })
+});
 
 const server = http.createServer(app);
 

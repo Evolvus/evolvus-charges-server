@@ -13,7 +13,7 @@ const ipHeader = "X-IP-HEADER";
 
 var corporateURL = process.env.CORPORATE_URL || "http://10.10.69.193:3031/corporateUtilityCodes";
 
-var attributes = ["corporateName", "utilityCode", "chargePlan", "corporateAccount", "billingAddress", "emailId", "GSTINnumber", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
+var attributes = ["corporateName","tenantId", "utilityCode", "chargePlan", "corporateAccount", "billingAddress", "emailId", "GSTINnumber", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
 var filterAttributes = ["corporateName", "utilityCode", "chargePlan"]
 
 var instance = axios.create({
@@ -46,6 +46,7 @@ module.exports = (router) => {
               object.createdDateAndTime = new Date().toISOString();
               object.updatedBy = object.createdBy;
               object.updatedDateAndTime = object.createdDateAndTime;
+              object.tenantId = selectedUtility[0].tenantId;
               corporateLinkage.save(object, ipAddress, createdBy).then((result) => {
                 response.data = result;
                 response.description = `Saved successfully`;
@@ -92,7 +93,7 @@ module.exports = (router) => {
         var sort = _.get(req.query, "sort", {});
         var orderby = sortable(sort);
         var filterValues = _.pick(req.query, filterAttributes);
-        var filter = _.omitBy(filterValues, function(value, key) {
+        var filter = _.omitBy(filterValues, function (value, key) {
           return value.startsWith("undefined");
         });
         corporateLinkage.find(filter, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
@@ -128,7 +129,7 @@ module.exports = (router) => {
         var sort = _.get(req.query, "sort", {});
         var orderby = sortable(sort);
         var filterValues = _.pick(req.query, filterAttributes);
-        var filter = _.omitBy(filterValues, function(value, key) {
+        var filter = _.omitBy(filterValues, function (value, key) {
           return value.startsWith("undefined");
         });
         corporateLinkage.find(filter, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
@@ -165,7 +166,7 @@ module.exports = (router) => {
         var sort = _.get(req.query, "sort", {});
         var orderby = sortable(sort);
         var filterValues = _.pick(req.query, filterAttributes);
-        var filter = _.omitBy(filterValues, function(value, key) {
+        var filter = _.omitBy(filterValues, function (value, key) {
           return value.startsWith("undefined");
         });
         corporateLinkage.find(filter, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {

@@ -6,5 +6,6 @@ module.exports = (router) => {
   require("./chargeCode")(router);
   require("./transactionType")(router);
   require("./chargePlan")(router);
+  require("./billing")(router);
 
 };
