@@ -70,7 +70,7 @@ module.exports = (router) => {
         var skipCount = 0;
         var sort = _.get(req.query, "sort", {});
         var orderby = sortable(sort);
-        chargePlan.find({}, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
+        chargePlan.find(filter, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
           if (result.length > 0) {
             response.data = result;
             response.description = "SUCCESS";
