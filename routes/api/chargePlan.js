@@ -64,7 +64,7 @@ module.exports = (router) => {
       try {
         var filterValues = _.pick(req.query, filterAttributes);
         var filter = _.omitBy(filterValues, function(value, key) {
-          return value.startsWith("undefined");
+          return value.startsWith("undefined") || value.length == 0;
         });
         var limit = _.get(req.query, "limit", LIMIT);
         var skipCount = 0;
