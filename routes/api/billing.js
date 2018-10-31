@@ -19,7 +19,7 @@ const ipHeader = "X-IP-HEADER";
 var attributes = ["corporateName", "utilityCode", "billDate", "billFrequency", "billNumber", "billPeriod", "actualChargesAmount", "actualGSTAmount", "actualTotalAmount", "finalChargesAmount", "finalGSTAmount", "finalTotalAmount", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
 var filterAttributes = ["corporateName", "utilityCode", "chargePlan"];
 
-var applicationURL = process.env.CDA_URL || "http://localhost:9292/api/transactions";
+var applicationURL = process.env.CDA_URL || "http://10.10.69.193:3031/chargesTxnDetails";
 var timeOut = process.env.TIME_OUT || 5000;
 
 var instance = axios.create({
@@ -144,93 +144,104 @@ module.exports = (router) => {
             const createdBy = req.header(userHeader);
             const ipAddress = req.header(ipHeader);
             try {
-                let generatedBills=[];
-                corporateLinkage.find({}, {}, 0, 0, req.ip, "kavya").then(corporates => {
-                    Promise.all(corporates.map(corporate => {
+                debug("Bill generation Initiated.");
+                let generatedBills = [];
+                corporateLinkage.find({}, {}, 0, 0, ipAddress, createdBy).then(corporates => {
+                    debug(`Number of corporates found is: ${corporates.length}`);
+                    if (corporates.length > 0) {
+                        Promise.all(corporates.map(corporate => {
 
-                        var mandateTransactionTypes = corporate.chargePlan.chargeCodes.filter((chargeCode) => {
-                            return chargeCode.transactionType.type == "MANDATE"
-                        }).map((chargeCode) => {
-                            return chargeCode.transactionType.code;
+                            var mandateTransactionTypes = corporate.chargePlan.chargeCodes.filter((chargeCode) => {
+                                return chargeCode.transactionType.type == "MANDATE"
+                            }).map((chargeCode) => {
+                                return chargeCode.transactionType.code;
+                            });
+
+                            var paymentTransactionTypes = corporate.chargePlan.chargeCodes.filter((chargeCode) => {
+                                return chargeCode.transactionType.type == "PAYMENT"
+                            }).map((chargeCode) => {
+                                return chargeCode.transactionType.code;
+                            });
+
+                            var date = new Date();
+                            var toDate = moment(date).format("DD-MM-YYYY");
+                            date.setMonth(date.getMonth() - 1);
+                            var fromDate = moment(date).format("DD-MM-YYYY");
+
+                            let mandateObject = {
+                                txnCodes: mandateTransactionTypes,
+                                utilityCode: corporate.utilityCode,
+                                fromDate: fromDate,
+                                toDate: toDate,
+                                tenantId: corporate.tenantId,
+                                requestType: "MANDATE"
+                            };
+                            debug(`Mandate object for utilityCode ${corporate.utilityCode} is ${JSON.stringify(mandateObject)}`);
+                            let paymentObject = {
+                                txnCodes: paymentTransactionTypes,
+                                utilityCode: corporate.utilityCode,
+                                fromDate: fromDate,
+                                toDate: toDate,
+                                tenantId: corporate.tenantId,
+                                requestType: "PAYMENT"
+                            };
+                            debug(`Payment object for utilityCode ${corporate.utilityCode} is ${JSON.stringify(paymentObject)}`);
+                            Promise.all([axios.post(applicationURL, mandateObject), axios.post(applicationURL, paymentObject)]).then((response) => {
+                                let totalTransactions = [];
+                                if (response[0].data.data) {
+                                    totalTransactions.push(response[0].data.data[0]);
+                                }
+                                if (response[1].data.data) {
+                                    totalTransactions.push(response[1].data.data[0]);
+                                }
+
+                                debug(`Total transaction codes available for utilityCode ${corporate.utilityCode} are ${JSON.stringify(totalTransactions)}`);
+
+                                billing.generateBill(corporate, totalTransactions, createdBy, ipAddress).then((responseFromMethod) => {
+                                    var responseObject = {};
+                                    responseObject.details = `Bill Generated : Bill Number = ${responseFromMethod.billNumber}`;
+                                    responseObject.status = "Bill Generated Successfully";
+                                    generatedBills.push(responseObject);
+                                });
+                            }).catch(e => {
+                                debug(`Failed to fetch transaction details`, e);
+                                response.status = "400";
+                                response.data = {};
+                                response.description = `Failed to fetch transaction details`;
+                            });
+
+                        })).then((result) => {
+                            var responseToScheduler = {};
+                            responseToScheduler.data = `${generatedBills.length} bills generated successfully!`;
+                            responseToScheduler.details = generatedBills;
+                            response.data = {};
+                            response.description = "Bill generation Initiated";
+                            response.status = "200";
+                            res.json(response);
+                        }).catch((e) => {
+                            debug(`Error while iterating corporates`, e);
+                            res.status(400).send(e);
                         });
-
-                        var paymentTransactionTypes = corporate.chargePlan.chargeCodes.filter((chargeCode) => {
-                            return chargeCode.transactionType.type == "PAYMENT"
-                        }).map((chargeCode) => {
-                            return chargeCode.transactionType.code;
-                        });
-
-                        var date = new Date();
-                        var toDate = moment(date).format("DD-MM-YYYY");
-                        date.setMonth(date.getMonth() - 1);
-                        var fromDate = moment(date).format("DD-MM-YYYY");
-
-                        let mandateObject = {
-                            txnCodes: mandateTransactionTypes,
-                            utilityCode: corporate.utilityCode,
-                            fromDate: fromDate,
-                            toDate: toDate,
-                            tenantId: corporate.tenantId,
-                            requestType: "Mandate"
-                        }
-                        let paymentObject = {
-                            txnCodes: paymentTransactionTypes,
-                            utilityCode: corporate.utilityCode,
-                            fromDate: fromDate,
-                            toDate: toDate,
-                            tenantId: corporate.tenantId,
-                            requestType: "Payment"
-                        }
-
-                        // Promise.all([axios.post(applicationURL, mandateObject), axios.post(applicationURL, paymentObject)]).then((response) => {
-                        let response = [
-
-                            [{
-                                "SINGLE_CREATE_ACH": "12",
-                                "SINGLE_AMEND_ACH": "1",
-                                "SINGLE_CREATE_ESIGN": "4"
-                            }
-                            ],
-
-                            [{
-                                "AUTO_COLLECTION_ACH": "4",
-                                "BULK_PAYMENT_ACH": "7",
-                            }
-                            ]
-                        ]
-                        let totalTransactions = [];
-                        totalTransactions.push(response[0][0]);
-                        totalTransactions.push(response[1][0]);
-                        billing.generateBill(corporate, totalTransactions, createdBy, ipAddress).then((responseFromMethod) => {
-                            var responseObject = {};
-                            console.log("I am still waiting here generating bill");
-                            responseObject.details = `Bill Generated : Bill Number = ${responseFromMethod.billNumber}`;
-                            responseObject.status = "Bill Generated Successfully";
-                            console.log("responseObject", responseObject);
-                            generatedBills.push(responseObject);
-                        });
-
-                    })).then((result) => {
-                        console.log("I am in .then of Promise.all of map");
-                        var responseToScheduler = {};
-                        responseToScheduler.data = `${generatedBills.length} bills generated successfully!`;
-                        responseToScheduler.details = generatedBills;
-                        res.send(generatedBills)
-                    }).catch((e) => {
-                        res.status(400).send(e);
-                    });
-
+                    }
+                    else {
+                        debug(`No corporates Found`);
+                        response.data = {};
+                        response.description = "No corporate details found";
+                        response.status = "200";
+                        res.json(response);
+                    }
                 });
 
             } catch (error) {
+                debug(`Failed generating Bills`, error);
                 response.status = "400";
                 response.data = error;
-                response.description = "Failed to fetch Gl Parameters.";
+                response.description = "Failed generating Bills";
                 res.status(400).send(response);
             }
         });
 
-    // })
+
 }
 
 
