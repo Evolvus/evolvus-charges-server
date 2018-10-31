@@ -240,16 +240,11 @@ module.exports = (router) => {
                                 return chargeCode.transactionType.code;
                             });
 
-                            var date = new Date();
-                            var toDate = moment(date).format("DD-MM-YYYY");
-                            date.setMonth(date.getMonth() - 1);
-                            var fromDate = moment(date).format("DD-MM-YYYY");
-
                             let mandateObject = {
                                 txnCodes: mandateTransactionTypes,
                                 utilityCode: corporate.utilityCode,
-                                fromDate: fromDate,
-                                toDate: toDate,
+                                fromDate: req.body.fromDate,
+                                toDate: req.body.toDate,
                                 tenantId: corporate.tenantId,
                                 requestType: "MANDATE"
                             };
@@ -257,8 +252,8 @@ module.exports = (router) => {
                             let paymentObject = {
                                 txnCodes: paymentTransactionTypes,
                                 utilityCode: corporate.utilityCode,
-                                fromDate: fromDate,
-                                toDate: toDate,
+                                fromDate: req.body.fromDate,
+                                toDate: req.body.toDate,
                                 tenantId: corporate.tenantId,
                                 requestType: "PAYMENT"
                             };
@@ -274,7 +269,7 @@ module.exports = (router) => {
 
                                 debug(`Total transaction codes available for utilityCode ${corporate.utilityCode} are ${JSON.stringify(totalTransactions)}`);
 
-                                billing.generateBill(corporate, totalTransactions, createdBy, ipAddress).then((responseFromMethod) => {
+                                billing.generateBill(corporate, totalTransactions, req.body.billPeriod, createdBy, ipAddress).then((responseFromMethod) => {
                                     var responseObject = {};
                                     responseObject.details = `Bill Generated : Bill Number = ${responseFromMethod.billNumber}`;
                                     responseObject.status = "Bill Generated Successfully";
