@@ -99,6 +99,84 @@ module.exports = (router) => {
             }
         });
 
+    router.route("/billing")
+        .get((req, res, next) => {
+            var response = {
+                status: "200",
+                data: {},
+                description: ""
+            };
+            const createdBy = req.header(userHeader);
+            const ipAddress = req.header(ipHeader);
+            try {
+                var limit = _.get(req.query, "limit", LIMIT);
+                limit = parseInt(limit);
+                if (isNaN(limit)) {
+                    throw new Error("limit must be a number");
+                }
+                var pageSize = _.get(req.query, "pageSize", PAGE_SIZE);
+                pageSize = parseInt(pageSize);
+                if (isNaN(pageSize)) {
+                    throw new Error("pageSize must be a number");
+                }
+                var pageNo = _.get(req.query, "pageNo", 1);
+                pageNo = parseInt(pageNo);
+                if (isNaN(pageNo)) {
+                    throw new Error("pageNo must be a number");
+                }
+                var skipCount = pageSize * (pageNo - 1);
+                if (skipCount < 0) {
+                    throw new Error("skipCount must be positive value or 0");
+                }
+                var filterValues = _.pick(req.query, filterAttributes);
+                var filter = _.omitBy(req.query, function (value, key) {
+                    return value.startsWith("undefined");
+                });
+                var invalidFilters = _.difference(_.keys(req.query), filterAttributes);
+                let a = _.pull(invalidFilters, 'fromDate', 'toDate', 'pageSize', 'pageNo', 'limit', 'sort', 'query');
+                debug("invalidFilters:", invalidFilters);
+                if (a.length !== 0) {
+                    response.status = "200";
+                    response.description = "No Billings found";
+                    response.data = [];
+                    response.totalNoOfPagses = 0;
+                    response.totalNoOfRecords = 0;
+                    res.json(response);
+                } else {
+                    var sort = _.get(req.query, "sort", {});
+                    var orderby = sortable(sort);
+                    limit = (+pageSize < +limit) ? pageSize : limit;
+                    billing.find(filter, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
+                        if (result.length > 0) {
+                            response.data = result;
+                            response.description = "SUCCESS";
+                            response.totalNoOfPages = Math.ceil(result.length / pageSize);
+                            response.totalNoOfRecords = result.length;
+                            res.status(200).send(response);
+                        } else {
+                            response.data = [];
+                            response.description = "No Billings Found";
+                            response.totalNoOfRecords = 0;
+                            response.totalNoOfPages = 0;
+                            res.status(200).send(response);
+                        }
+                    }).catch(e => {
+                        debug(`Finding Billing promise failed: ${e}`);
+                        response.status = "400";
+                        response.data = e.toString();
+                        response.description = "Failed to find billing";
+                        res.status(400).send(response);
+                    });
+                }
+            } catch (error) {
+                debug(`Try-catch failed: ${error}`);
+                response.status = "400";
+                response.data = error;
+                response.description = "Failed to find";
+                res.status(400).send(response);
+            }
+        });
+
     router.route('/billing/:billNumber')
         .put((req, res, next) => {
             var response = {
@@ -113,7 +191,6 @@ module.exports = (router) => {
                 debug(`Input object is: ${JSON.stringify(object)}`);
                 object.updatedBy = createdBy;
                 object.updatedDateAndTime = new Date().toISOString();
-
                 glParameters.update(req.params.billNumber, object, ipAddress, createdBy).then((result) => {
                     response.data = result;
                     response.description = "Updated successfully";
@@ -241,8 +318,7 @@ module.exports = (router) => {
             }
         });
 
-
-}
+};
 
 
 
