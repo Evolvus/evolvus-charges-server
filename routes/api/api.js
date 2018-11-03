@@ -7,5 +7,6 @@ module.exports = (router) => {
   require("./transactionType")(router);
   require("./chargePlan")(router);
   require("./billing")(router);
+  require("./cbs")(router);
 
 };
