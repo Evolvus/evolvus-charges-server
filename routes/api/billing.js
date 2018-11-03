@@ -13,10 +13,11 @@ const PAGE_SIZE = 20;
 const ORDER_BY = process.env.ORDER_BY || {
   updatedDateAndTime: -1
 };
+const utilityCodeHeader = "X-TENANT-ID";
 const userHeader = "X-USER";
 const ipHeader = "X-IP-HEADER";
 
-var attributes = ["corporateName", "utilityCode", "billDate", "billFrequency", "billNumber", "billPeriod", "billStatus", "actualChargesAmount", "actualGSTAmount", "actualTotalAmount", "finalChargesAmount", "finalGSTAmount", "finalTotalAmount", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
+var attributes = ["corporateName", "utilityCode", "billDate", "billFrequency", "billNumber", "billPeriod", "billStatus", "actualChargesAmount", "actualGSTAmount", "actualTotalAmount", "finalChargesAmount", "finalGSTAmount", "finalTotalAmount", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime", "processingStatus", "wfInstanceId"];
 var filterAttributes = ["utilityCode", "billNumber", "billPeriod", "billDate", "billStatus"];
 
 var applicationURL = process.env.CDA_URL || "http://10.10.69.193:3031/chargesTxnDetails";
@@ -64,40 +65,6 @@ module.exports = (router) => {
         res.status(400).send(response);
       }
     });
-  // .get((req, res, next) => {
-  //     var response = {
-  //         status: "200",
-  //         data: [],
-  //         description: ""
-  //     };
-  //     const createdBy = req.header(userHeader);
-  //     const ipAddress = req.header(ipHeader);
-  //     try {
-  //         var limit = _.get(req.query, "limit", LIMIT);
-  //         var skipCount = 0;
-  //         var sort = _.get(req.query, "sort", {});
-  //         var orderby = sortable(sort);
-  //         var filterValues = _.pick(req.query, filterAttributes);
-  //         var filter = _.omitBy(filterValues, function (value, key) {
-  //             return value.startsWith("undefined");
-  //         });
-  //         billing.find(filter, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
-  //             response.description = "";
-  //             response.data = result;
-  //             res.status(200).send(response);
-  //         }).catch(e => {
-  //             response.status = "400";
-  //             response.data = e.toString();
-  //             response.description = "Failed to fetch Bills.";
-  //             res.status(400).send(response);
-  //         });
-  //     } catch (error) {
-  //         response.status = "400";
-  //         response.data = error;
-  //         response.description = "Failed to fetch Bills";
-  //         res.status(400).send(response);
-  //     }
-  // });
 
   router.route("/billing")
     .get((req, res, next) => {
@@ -129,7 +96,7 @@ module.exports = (router) => {
           throw new Error("skipCount must be positive value or 0");
         }
         var filterValues = _.pick(req.query, filterAttributes);
-        var filter = _.omitBy(req.query, function(value, key) {
+        var filter = _.omitBy(req.query, function (value, key) {
           return value.startsWith("undefined") || value.length == 0;
         });
         var invalidFilters = _.difference(_.keys(req.query), filterAttributes);
@@ -187,27 +154,68 @@ module.exports = (router) => {
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       try {
-        var object = _.pick(req.body, attributes);
+        var object = _.pick(req.body, ["finalChargesAmount"]);
         debug(`Input object is: ${JSON.stringify(object)}`);
         object.updatedBy = createdBy;
         object.updatedDateAndTime = new Date().toISOString();
-        glParameters.update(req.params.billNumber, object, ipAddress, createdBy).then((result) => {
+        object.billStatus = "PENDING_AUTHORIZATION";
+        billing.update(req.params.billNumber, object, ipAddress, createdBy).then((result) => {
+          debug(`Updated Bill ${req.params.billNumber}`);
           response.data = result;
           response.description = "Updated successfully";
           res.status(200).send(response);
         }).catch(e => {
-          debug(`Updating GL parameters promise failed: ${e}`);
+          debug(`Updating Bill promise failed: ${e}`);
           response.status = "400";
-          response.data = e.toString();
-          response.description = "Failed to update";
+          response.data = {};
+          response.description = e;
           res.status(400).send(response);
         });
 
       } catch (error) {
+        debug(`try-catch promise failed`, error);
         response.status = "400";
-        response.data = error;
-        response.description = "Failed to fetch Gl Parameters.";
+        response.data = {};
+        response.description = error;
         res.status(400).send(response);
+      }
+    });
+
+  router.route("/private/api/billing/:billNumber")
+    .put((req, res, next) => {
+      const utilityCode = req.header(utilityCodeHeader);
+      const createdBy = req.header(userHeader);
+      const ipAddress = req.header(ipHeader);
+      const response = {
+        "status": "200",
+        "description": "",
+        "data": []
+      };
+      try {
+        let body = _.pick(req.body, attributes);
+        body.updatedBy = createdBy;
+        body.lastUpdatedDate = new Date().toISOString();
+        debug(`Bill workflow update API:Input parameters are: utilityCode:${utilityCode},ipAddress:${ipAddress},createdBy:${createdBy},billNumber:${req.params.billNumber},updateObject:${JSON.stringify(body)}`);
+        billing.updateWorkflow(utilityCode, ipAddress, createdBy, req.params.billNumber, body).then((updatedBill) => {
+          response.status = "200";
+          response.description = `${req.params.billNumber} Bill workflow status has been updated successfully `;
+          response.data = body;
+          res.status(200).json(response);
+        }).catch((e) => {
+          var reference = shortid.generate();
+          debug(`Bill update workflow promise failed due to ${e} and referenceId:${reference}`);
+          response.status = "400";
+          response.description = `Unable to update Bill workflow status due to ${e}`;
+          response.data = {};
+          res.status(400).json(response);
+        });
+      } catch (e) {
+        var reference = shortid.generate();
+        debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
+        response.status = "400";
+        response.description = `Unable to update User workflow status due to ${e}`;
+        response.data = {};
+        res.status(400).json(response);
       }
     });
 
