@@ -56,10 +56,6 @@ var date = new Date();
 var d = moment(date).subtract(1, 'month');
 d.month();
 var billPeriod = d.format('MMMM-YYYY');
-console.log(billPeriod);
-var k=new Date().toISOString();
-console.log(moment("2018-11-02 05:31:55.211Z").format('MMM DD YYYY'));
-
 
 var toDate = moment(date).format("DD-MM-YYYY");
 date.setMonth(date.getMonth() - 1);
