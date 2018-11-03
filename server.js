@@ -55,13 +55,18 @@ var schedule = require('node-schedule');
 var date = new Date();
 var d = moment(date).subtract(1, 'month');
 d.month();
-var billPeriod = d.format('MMMYYYY');
+var billPeriod = d.format('MMMM-YYYY');
+console.log(billPeriod);
+var k=new Date().toISOString();
+console.log(moment("2018-11-02 05:31:55.211Z").format('MMM DD YYYY'));
+
+
 var toDate = moment(date).format("DD-MM-YYYY");
 date.setMonth(date.getMonth() - 1);
 var fromDate = moment(date).format("DD-MM-YYYY");
 
 var j = schedule.scheduleJob('30 * * * * * ', function() {
-  axios.post("http://192.168.1.100:9292/api/generateBill", {
+  axios.post("http://192.168.1.18:9292/api/generateBill", {
     billPeriod: billPeriod,
     fromDate: fromDate,
     toDate: toDate
@@ -79,7 +84,7 @@ var j = schedule.scheduleJob('30 * * * * * ', function() {
 
 const server = http.createServer(app);
 
-server.listen(PORT, () => {
+server.listen(PORT,"192.168.0.101",() => {
   debug("server started: ", PORT);
   app.emit("application_started");
 });
