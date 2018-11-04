@@ -16,8 +16,9 @@ const router = express.Router();
 const moment = require("moment");
 
 var dbConnection = connection.connect("CHARGES");
+var ChargesServiceUrl = process.env.CHARGES_SERVICE_URL || "http://192.168.0.105:9292/api/generateBill";
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   // res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Request-Headers", "*");
   res.header('Access-Control-Allow-Methods', 'GET, POST,PUT, DELETE, OPTIONS');
@@ -61,26 +62,26 @@ var toDate = moment(date).format("DD-MM-YYYY");
 date.setMonth(date.getMonth() - 1);
 var fromDate = moment(date).format("DD-MM-YYYY");
 
-var j = schedule.scheduleJob('30 * * * * * ', function() {
-  axios.post("http://192.168.1.18:9292/api/generateBill", {
+var j = schedule.scheduleJob('30 * * * * * ', function () {
+  axios.post(ChargesServiceUrl, {
     billPeriod: billPeriod,
     fromDate: fromDate,
     toDate: toDate
   }, {
-    headers: {
-      "X-USER": "SYSTEM",
-      "X-IP-HEADER": "192.168.1.100"
-    }
-  }).then((res) => {
-    debug(res.data);
-  }).catch(e => {
-    debug(e);
-  })
+      headers: {
+        "X-USER": "SYSTEM",
+        "X-IP-HEADER": "127.0.01"
+      }
+    }).then((res) => {
+      debug(res.data);
+    }).catch(e => {
+      debug(e);
+    })
 });
 
 const server = http.createServer(app);
 
-server.listen(PORT,"192.168.0.101",() => {
+server.listen(PORT, () => {
   debug("server started: ", PORT);
   app.emit("application_started");
 });
