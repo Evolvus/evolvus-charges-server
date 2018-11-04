@@ -60,24 +60,26 @@ module.exports = (router) => {
                 "data": {}
             };
             try {
-                let object = _.pick(req.body, accountpostingAttributes);
-                object.reqMsgDateTime = new Date().toISOString();
-                axios.post(accpostingURL, object).then((accountpostres) => {
-                    console.log(accountpostres.data);
-                    response.data = accountpostres.data;
-                    res.send(response);
-                }).catch(e => {
-                    response.status = "400";
-                    response.description = e;
-                    response.data = {};
-                    res.status(400).json(response);
 
-                });
+                res.send(response);
+                // let object = _.pick(req.body, accountpostingAttributes);
+                // object.reqMsgDateTime = new Date().toISOString();
+                // axios.post(accpostingURL, object).then((accountpostres) => {
+                //     console.log(accountpostres.data);
+                //     response.data = accountpostres.data;
+                //     res.send(response);
+                // }).catch(e => {
+                //     response.status = "400";
+                //     response.description = e;
+                //     response.data = {};
+                //     res.status(400).json(response);
+
+                // });
             } catch (e) {
                 var reference = shortid.generate();
                 debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
                 response.status = "400";
-                response.description = `Unable to add new User '${req.body.userId}'. Due to '${e}'`;
+                response.description = ``;
                 response.data = {};
                 res.status(400).json(response);
             }
