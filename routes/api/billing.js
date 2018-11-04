@@ -16,7 +16,7 @@ const utilityCodeHeader = "X-TENANT-ID";
 const userHeader = "X-USER";
 const ipHeader = "X-IP-HEADER";
 
-var attributes = ["corporateName", "utilityCode", "billDate", "billFrequency", "billNumber", "billPeriod", "billStatus", "actualChargesAmount", "actualGSTAmount", "actualTotalAmount", "finalChargesAmount", "finalGSTAmount", "finalTotalAmount", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime", "processingStatus", "wfInstanceId","details","remarks"];
+var attributes = ["corporateName", "utilityCode", "billDate", "billFrequency", "billNumber", "billPeriod", "billStatus", "actualChargesAmount", "actualGSTAmount", "actualTotalAmount", "finalChargesAmount", "finalGSTAmount", "finalTotalAmount", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime", "processingStatus", "wfInstanceId", "details", "remarks"];
 var filterAttributes = ["utilityCode", "billNumber", "billPeriod", "billDate", "billStatus"];
 
 var applicationURL = process.env.CDA_URL || "http://10.10.69.193:3031/chargesTxnDetails";
@@ -71,7 +71,7 @@ module.exports = (router) => {
         status: "200",
         data: {},
         description: ""
-      };
+      };      
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       try {
@@ -152,7 +152,7 @@ module.exports = (router) => {
       };
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
-      try {
+      try {        
         var object = _.pick(req.body.bill, attributes);
         debug(`Input object is: ${JSON.stringify(object)}`);
         object.updatedBy = createdBy;
