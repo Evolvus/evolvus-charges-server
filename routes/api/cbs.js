@@ -52,7 +52,7 @@ module.exports = (router) => {
             }
         });
 
-    router.route("/accountPosting")
+    router.route("/accountPosting/:billNumber")
         .post((req, res, next) => {
             const response = {
                 "status": "200",
