@@ -1,11 +1,9 @@
-const PORT = process.env.PORT || 9292;
+const PORT = process.env.PORT || 9090;
 /*
  ** Get all the required libraries
  */
 
 const http = require("http");
-
-
 const debug = require("debug")("evolvus-charges-server:server");
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -16,7 +14,8 @@ const router = express.Router();
 const moment = require("moment");
 
 var dbConnection = connection.connect("CHARGES");
-var ChargesServiceUrl = process.env.CHARGES_SERVICE_URL || "http://192.168.0.105:9292/api/generateBill";
+var ChargesServiceUrl = process.env.CHARGES_SERVICE_URL || "http://192.168.1.18:9292/charges/api/generateBill";
+var schedulePeriod=process.env.SCHEDULE_PERIOD || '1 1 1 1 * * ';
 
 app.use(function (req, res, next) {
   // res.header("Access-Control-Allow-Origin", "*");
@@ -62,7 +61,7 @@ var toDate = moment(date).format("DD-MM-YYYY");
 date.setMonth(date.getMonth() - 1);
 var fromDate = moment(date).format("DD-MM-YYYY");
 
-var j = schedule.scheduleJob('30 * * * * * ', function () {
+var j = schedule.scheduleJob(schedulePeriod, function () {
   axios.post(ChargesServiceUrl, {
     billPeriod: billPeriod,
     fromDate: fromDate,
