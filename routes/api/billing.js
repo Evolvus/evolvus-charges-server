@@ -150,8 +150,9 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
-      const createdBy = req.header(userHeader);
-      const ipAddress = req.header(ipHeader);
+      const createdBy = _.get("X-USER",req.header,"SYSTEM");
+      const ipAddress = _.get("X-IP-HEADER",req.header,"127.0.0.1");
+      
       try {        
         var object = _.pick(req.body.bill, attributes);
         debug(`Input object is: ${JSON.stringify(object)}`);

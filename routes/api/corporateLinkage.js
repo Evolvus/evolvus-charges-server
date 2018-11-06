@@ -29,8 +29,8 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
-      const createdBy = req.header(userHeader);
-      const ipAddress = req.header(ipHeader);
+      const createdBy = _.get("X-USER",req.header,"KAVYAK");
+      const ipAddress = _.get("X-IP-HEADER",req.header,"192.168.1.18");
       try {
         instance.get(corporateURL).then((resp) => {
           if (resp.data && resp.data.data) {
