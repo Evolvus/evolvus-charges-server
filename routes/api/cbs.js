@@ -2,13 +2,13 @@ const _ = require("lodash");
 const debug = require("debug")("node-schedule");
 const http = require("http");
 var axios = require("axios");
-var accenquriyURL = process.env.ACCOUNTENQUIRY_URL || "http://10.10.69.193:3037/cdacbsservice/dogeneralaccinquiry";
+var accenquiryURL = process.env.ACCOUNTENQUIRY_URL || "http://10.10.69.193:3037/cdacbsservice/dogeneralaccinquiry";
 var accpostingURL = process.env.ACCOUNTPOSTING_URL || "http://10.10.69.193:3037/cdacbsservice/xfertrnadd";
 const accountverifyAttributes = ["serviceName", "reqMsgDateTime", "acctNumber"];
 const accountpostingAttributes = ["serviceName", "reqMsgDateTime", "debitAccNumber", "debitAmount", "debitTxnRemarks", "creditAccNumberOne", "creditAmountOne", "creditTxnRemarksOne", "creditAccNumberTwo", "creditAmountTwo", "creditTxnRemarksTwo"];
 var timeOut = process.env.TIME_OUT || 5000;
 var instance = axios.create({
-    baseURL: accenquriyURL,
+    baseURL: accenquiryURL,
     timeout: timeOut
 });
 const billing = require("@evolvus/evolvus-charges-billing");
@@ -32,7 +32,7 @@ module.exports = (router) => {
                 let object = _.pick(req.query, accountverifyAttributes);
                 object.serviceName = "doGeneralAcctInquiry";
                 object.reqMsgDateTime = new Date().toISOString();
-                axios.post(accenquriyURL, object).then((accountres) => {
+                axios.post(accenquiryURL, object).then((accountres) => {
                     debug("Account Status: " + accountres.data.statusFlg);
                     debug("Account Number: " + accountres.data.acctNumber);
                     debug("Account Name: " + accountres.data.acctName);
