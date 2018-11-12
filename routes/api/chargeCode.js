@@ -135,6 +135,7 @@ module.exports = router => {
         res.status(400).send(response);
       }
     });
+
   router.route('/chargeCode/:name')
     .put((req, res, next) => {
       var response = {
@@ -143,39 +144,28 @@ module.exports = router => {
         description: ""
       };
       try {
-
+        var createdBy = req.header(userHeader);
+        var ipAddress = req.header(ipHeader);
         var object = _.pick(req.body, coreAttributes);
         object.amount = Number(object.amount.toFixed(2));
         object.createdBy = object.updatedBy = req.header(userHeader);
         object.updatedDateAndTime = new Date().toISOString();
-        var schemeTypeFilter = {
-          name: object.schemeType
-        };
-        var transactionTypeFilter = {
-          name: object.transactionType
-        };
-
-        chargeCode
-          .update(object, req.params.name, req.ip, "")
-          .then(result => {
-            response.data = result;
-            response.description = `Modified ${
-                    object.name
-                  } Charge Code successfully`;
-            res.status(200).send(response);
-          })
-          .catch(e => {
-            response.status = "400";
-            response.data = e.toString();
-            response.description = "Failed to save";
-            res.status(400).send(response);
-          });
-
-
-      } catch (error) {
+        chargeCode.update(req.params.name, object, ipAddress, createdBy).then((result) => {
+          response.data = result;
+          response.description = `Modified ${
+                                req.query.name
+                              } Charge Code successfully`;
+          res.status(200).send(response);
+        }).catch((e) => {
+          response.status = "400";
+          response.data = e.toString();
+          response.description = "Failed to Update";
+          res.status(400).send(response);
+        });
+      } catch (e) {
         response.status = "400";
         response.data = error;
-        response.description = "Failed to save";
+        response.description = "Failed to Update Charge Codes";
         res.status(400).send(response);
       }
     });

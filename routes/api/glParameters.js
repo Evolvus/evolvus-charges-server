@@ -79,57 +79,6 @@ module.exports = (router) => {
       }
     });
 
-  //   router.route('/glParameter/:id')
-  //     .put((req, res, next) => {
-  //       var response = {
-  //         status: "200",
-  //         data: {},
-  //         description: ""
-  //       };
-  //       const createdBy = req.header(userHeader);
-  //       const ipAddress = req.header(ipHeader);
-  //       try {
-  //         var object = _.pick(req.body, attributes);
-  //         debug(`Input object is: ${JSON.stringify(object)}`);
-  //         object.updatedBy = createdBy;
-  //         object.updatedDateAndTime = new Date().toISOString();
-  //         let filter = {
-  //           "name": object.schemeType
-  //         };
-  //         schemeType.find(filter, {}, 0, 1, ipAddress, createdBy)
-  //           .then((result) => {
-  //             if (_.isEmpty(result) && !_.isEmpty(object.schemeType)) {
-  //               throw new Error("Invalid Scheme Type.");
-  //             } else {
-  //               glParameters.update(req.params.id, object, ipAddress, createdBy).then((result) => {
-  //                 response.data = result;
-  //                 response.description = "Updated successfully";
-  //                 res.status(200).send(response);
-  //               }).catch(e => {
-  //                 debug(`Updating GL parameters promise failed: ${e}`);
-  //                 response.status = "400";
-  //                 response.data = e.toString();
-  //                 response.description = "Failed to update";
-  //                 res.status(400).send(response);
-  //               });
-  //             }
-  //           }).catch(e => {
-  //             debug(`Finding Scheme Type promise failed: ${e}`);
-  //             response.status = "400";
-  //             response.data = e.toString();
-  //             response.description = "Failed to save";
-  //             res.status(400).send(response);
-  //           });
-  //       } catch (error) {
-  //         response.status = "400";
-  //         response.data = error;
-  //         response.description = "Failed to fetch Gl Parameters.";
-  //         res.status(400).send(response);
-  //       }
-  //     });
-  // };
-
-
   router.route('/glParameter/:id')
     .put((req, res, next) => {
       var response = {

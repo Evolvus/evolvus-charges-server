@@ -15,9 +15,9 @@ const moment = require("moment");
 
 var dbConnection = connection.connect("CHARGES");
 var ChargesServiceUrl = process.env.CHARGES_SERVICE_URL || "http://192.168.1.18:9292/charges/api/generateBill";
-var schedulePeriod=process.env.SCHEDULE_PERIOD || '1 1 1 1 * * ';
+var schedulePeriod = process.env.SCHEDULE_PERIOD || '1 1 1 1 * * ';
 
-app.use(function (req, res, next) {
+app.use(function(req, res, next) {
   // res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Request-Headers", "*");
   res.header('Access-Control-Allow-Methods', 'GET, POST,PUT, DELETE, OPTIONS');
@@ -37,7 +37,7 @@ app.use(bodyParser.json({
 
 require("./routes/main")(router);
 
-app.use("/api", router);
+app.use("/charges/api", router);
 
 /*
 * * * * * *
@@ -61,21 +61,21 @@ var toDate = moment(date).format("DD-MM-YYYY");
 date.setMonth(date.getMonth() - 1);
 var fromDate = moment(date).format("DD-MM-YYYY");
 
-var j = schedule.scheduleJob(schedulePeriod, function () {
+var j = schedule.scheduleJob(schedulePeriod, function() {
   axios.post(ChargesServiceUrl, {
     billPeriod: billPeriod,
     fromDate: fromDate,
     toDate: toDate
   }, {
-      headers: {
-        "X-USER": "SYSTEM",
-        "X-IP-HEADER": "127.0.01"
-      }
-    }).then((res) => {
-      debug(res.data);
-    }).catch(e => {
-      debug(e);
-    })
+    headers: {
+      "X-USER": "SYSTEM",
+      "X-IP-HEADER": "127.0.01"
+    }
+  }).then((res) => {
+    debug(res.data);
+  }).catch(e => {
+    debug(e);
+  })
 });
 
 const server = http.createServer(app);

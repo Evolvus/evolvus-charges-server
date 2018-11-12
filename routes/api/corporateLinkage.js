@@ -29,8 +29,8 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
-      const createdBy = _.get("X-USER",req.header,"KAVYAK");
-      const ipAddress = _.get("X-IP-HEADER",req.header,"192.168.1.18");
+      const createdBy = _.get("X-USER", req.header, "KAVYAK");
+      const ipAddress = _.get("X-IP-HEADER", req.header, "192.168.1.18");
       try {
         instance.get(corporateURL).then((resp) => {
           if (resp.data && resp.data.data) {
@@ -188,7 +188,7 @@ module.exports = (router) => {
       }
     });
 
-  router.route('/glParameter/:id')
+  router.route('/corporateLinkage/:utilityCode')
     .put((req, res, next) => {
       var response = {
         status: "200",
@@ -202,37 +202,21 @@ module.exports = (router) => {
         debug(`Input object is: ${JSON.stringify(object)}`);
         object.updatedBy = createdBy;
         object.updatedDateAndTime = new Date().toISOString();
-        let filter = {
-          "name": object.schemeType
-        };
-        schemeType.find(filter, {}, 0, 1, ipAddress, createdBy)
-          .then((result) => {
-            if (_.isEmpty(result) && !_.isEmpty(object.schemeType)) {
-              throw new Error("Invalid Scheme Type.");
-            } else {
-              glParameters.update(req.params.id, object, ipAddress, createdBy).then((result) => {
-                response.data = result;
-                response.description = "Updated successfully";
-                res.status(200).send(response);
-              }).catch(e => {
-                debug(`Updating GL parameters promise failed: ${e}`);
-                response.status = "400";
-                response.data = e.toString();
-                response.description = "Failed to update";
-                res.status(400).send(response);
-              });
-            }
-          }).catch(e => {
-            debug(`Finding Scheme Type promise failed: ${e}`);
-            response.status = "400";
-            response.data = e.toString();
-            response.description = "Failed to save";
-            res.status(400).send(response);
-          });
-      } catch (error) {
+        corporateLinkage.update(req.params.utilityCode, object, ipAddress, createdBy).then((result) => {
+          response.data = result;
+          response.description = "Updated successfully";
+          res.status(200).send(response);
+        }).catch((e) => {
+          debug(`Update CorporateLinkage promise failed: ${e}`);
+          response.status = "400";
+          response.data = e.toString();
+          response.description = "Failed to Update";
+          res.status(400).send(response);
+        });
+      } catch (e) {
         response.status = "400";
-        response.data = error;
-        response.description = "Failed to fetch Gl Parameters.";
+        response.data = e;
+        response.description = "Failed to Update CorporateLinkage.";
         res.status(400).send(response);
       }
     });
