@@ -1,4 +1,4 @@
-const PORT = process.env.PORT || 9090;
+const PORT = process.env.PORT || 9292;
 /*
  ** Get all the required libraries
  */
@@ -14,10 +14,11 @@ const router = express.Router();
 const moment = require("moment");
 
 var dbConnection = connection.connect("CHARGES");
-var ChargesServiceUrl = process.env.CHARGES_SERVICE_URL || "http://192.168.1.18:9292/charges/api/generateBill";
-var schedulePeriod = process.env.SCHEDULE_PERIOD || '1 1 1 1 * * ';
+var ChargesServiceUrl = process.env.CHARGES_SERVICE_URL || "http://192.168.1.18:9292/api";
+var reattemptSchedulePeriod = process.env.SCHEDULE_PERIOD_REATTEMPT || "1 1 1 * * *";
+var billGenerationSchedulePeriod = process.env.SCHEDULE_PERIOD_BILL || "1 1 1 1 * * ";
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   // res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Request-Headers", "*");
   res.header('Access-Control-Allow-Methods', 'GET, POST,PUT, DELETE, OPTIONS');
@@ -37,7 +38,7 @@ app.use(bodyParser.json({
 
 require("./routes/main")(router);
 
-app.use("/charges/api", router);
+app.use("/api", router);
 
 /*
 * * * * * *
@@ -57,19 +58,33 @@ var d = moment(date).subtract(1, 'month');
 d.month();
 var billPeriod = d.format('MMMM-YYYY');
 
-var toDate = moment(date).format("DD-MM-YYYY");
-date.setMonth(date.getMonth() - 1);
-var fromDate = moment(date).format("DD-MM-YYYY");
+var fromDate = moment().subtract(1, 'month').startOf('month').format('DD-MM-YYYY');
+var toDate = moment().subtract(1, 'month').endOf('month').format('DD-MM-YYYY');
 
-var j = schedule.scheduleJob(schedulePeriod, function() {
-  axios.post(ChargesServiceUrl, {
+//Schedule job for generating bills.
+var j = schedule.scheduleJob(billGenerationSchedulePeriod, function () {
+  axios.post(`${ChargesServiceUrl}/generateBill`, {
     billPeriod: billPeriod,
     fromDate: fromDate,
     toDate: toDate
   }, {
+      headers: {
+        "X-USER": "SYSTEM",
+        "X-IP-HEADER": "127.0.01"
+      }
+    }).then((res) => {
+      debug(res.data);
+    }).catch(e => {
+      debug(e);
+    })
+});
+
+//Schedule job for 
+var k = schedule.scheduleJob(reattemptSchedulePeriod, function () {
+  axios.put(`${ChargesServiceUrl}/reattempt`, {}, {
     headers: {
       "X-USER": "SYSTEM",
-      "X-IP-HEADER": "127.0.01"
+      "X-IP-HEADER": "127.0.0.1"
     }
   }).then((res) => {
     debug(res.data);
