@@ -71,7 +71,7 @@ module.exports = (router) => {
         status: "200",
         data: {},
         description: ""
-      };      
+      };
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       try {
@@ -150,10 +150,10 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
-      const createdBy = _.get("X-USER",req.header,"SYSTEM");
-      const ipAddress = _.get("X-IP-HEADER",req.header,"127.0.0.1");
-      
-      try {        
+      const createdBy = _.get("X-USER", req.header, "SYSTEM");
+      const ipAddress = _.get("X-IP-HEADER", req.header, "127.0.0.1");
+
+      try {
         var object = _.pick(req.body.bill, attributes);
         debug(`Input object is: ${JSON.stringify(object)}`);
         object.updatedBy = createdBy;
@@ -319,6 +319,50 @@ module.exports = (router) => {
         res.status(400).send(response);
       }
     });
+
+  router.route('/reattempt')
+    .put((req, res, next) => {
+      var response = {
+        status: "200",
+        data: {},
+        description: ""
+      };
+      const createdBy = req.header(userHeader);
+      const ipAddress = req.header(ipHeader);
+      var start = moment().startOf('day').toISOString();
+      var end = moment().endOf('day').toISOString();
+      let filterBills = {
+        "billStatus": "CBS_POSTING_FAILURE",
+        "reattemptFlag": "NO",
+        "reattemptDate": {
+          $gte: start,
+          $lt: end
+        }
+      }
+      billing.find(filterBills, {}, 0, 0, ipAddress, createdBy).then((bills) => {
+        if (bills.length > 0) {
+          Promise.all(bills.map(bill => {
+            billing.reattempt(bill, createdBy, ipAddress).then(resp => {
+              debug(resp);
+            }).catch(e => {
+              debug(e)
+            });
+          })).then(() => {
+            response.data = {};
+            response.description = "Rettempt service Initiated";
+            response.status = "200";
+            res.json(response);
+          });
+        } else {
+          debug(`No Bills Found`);
+          response.data = {};
+          response.description = "No Bills found";
+          response.status = "200";
+          res.json(response);
+        }
+
+      })
+    })
 
 };
 
