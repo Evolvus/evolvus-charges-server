@@ -30,7 +30,7 @@ var instance = axios.create({
 
 module.exports = (router) => {
   router.route('/billing')
-    .post((req, finalResponse, next) => {
+    .post((req, res, next) => {
       var response = {
         status: "200",
         data: {},
