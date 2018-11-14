@@ -1,4 +1,4 @@
-FROM node:8.9 as node
+FROM node:8.9-alpine as node
 
 RUN npm install pm2 -g
 # ENV PM2_PUBLIC_KEY XXXX
