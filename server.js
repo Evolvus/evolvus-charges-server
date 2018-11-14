@@ -95,7 +95,7 @@ var k = schedule.scheduleJob(reattemptSchedulePeriod, function () {
 
 const server = http.createServer(app);
 
-server.listen(PORT, () => {
+server.listen(PORT,() => {
   debug("server started: ", PORT);
   app.emit("application_started");
 });

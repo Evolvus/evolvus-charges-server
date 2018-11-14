@@ -112,29 +112,24 @@ module.exports = (router) => {
           var sort = _.get(req.query, "sort", {});
           var orderby = sortable(sort);
           limit = (+pageSize < +limit) ? pageSize : limit;
-          billing.find(filter, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
-            if (result.length > 0) {
-              response.data = result;
-              response.description = "SUCCESS";
-              response.totalNoOfPages = Math.ceil(result.length / pageSize);
-              response.totalNoOfRecords = result.length;
+            Promise.all([billing.find(filter, orderby, skipCount, limit, ipAddress, createdBy), billing.find(filter, orderby, 0, 0, ipAddress, createdBy)])
+            .then(findResponse => {
+              response.status = "200";
+              response.data = findResponse[0];
+              response.description = `Found ${findResponse[0].length} Charge Code/s`;
+              response.totalNoOfPages = Math.ceil(findResponse[1].length / pageSize);
+              response.totalNoOfRecords = findResponse[1].length;
               res.status(200).send(response);
-            } else {
-              response.data = [];
-              response.description = "No Billings Found";
+            }) .catch(error => {
+              response.status = "400";
+              response.data = error;
+              response.description = `Failed to Fetch : ${error.message}`;
               response.totalNoOfRecords = 0;
               response.totalNoOfPages = 0;
-              res.status(200).send(response);
-            }
-          }).catch(e => {
-            debug(`Finding Billing promise failed: ${e}`);
-            response.status = "400";
-            response.data = e.toString();
-            response.description = "Failed to find billing";
-            res.status(400).send(response);
-          });
+              res.status(400).send(response);
+            });
         }
-      } catch (error) {
+      }catch (error) {
         debug(`Try-catch failed: ${error}`);
         response.status = "400";
         response.data = error;

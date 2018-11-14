@@ -105,29 +105,62 @@ module.exports = router => {
       try {
         var createdBy = req.header(userHeader);
         var ipAddress = req.header(ipHeader);
+        var limit = _.get(req.query, "limit", LIMIT);
+        limit = parseInt(limit);
+        if (isNaN(limit)) {
+          throw new Error("limit must be a number");
+        }
+        var pageSize = _.get(req.query, "pageSize", PAGE_SIZE);
+        pageSize = parseInt(pageSize);
+        if (isNaN(pageSize)) {
+          throw new Error("pageSize must be a number");
+        }
+        var pageNo = _.get(req.query, "pageNo", 1);
+        pageNo = parseInt(pageNo);
+        if (isNaN(pageNo)) {
+          throw new Error("pageNo must be a number");
+        }
+
+        var skipCount = pageSize * (pageNo - 1);
+        if (skipCount < 0) {
+          throw new Error("skipCount must be positive value or 0");
+        }
         var filterValues = _.pick(req.query, filterAttributes);
         var filter = _.omitBy(filterValues, function(value, key) {
           return value.startsWith("undefined") || value.length == 0;
         });
-
-        var limit = _.get(req.query, "limit", LIMIT);
-        var skipCount = 0;
-        var sort = _.get(req.query, "sort", {});
-        var orderby = sortable(sort);
-        chargeCode
-          .find(filter, orderby, skipCount, limit, ipAddress, createdBy)
-          .then(findResponse => {
-            response.status = "200";
-            response.data = findResponse;
-            response.description = `Found ${findResponse.length} Charge Code/s`;
-            res.status(200).send(response);
-          })
-          .catch(error => {
-            response.status = "400";
-            response.data = error;
-            response.description = `Failed to Fetch : ${error.message}`;
-            res.status(400).send(response);
-          });
+        var invalidFilters = _.difference(_.keys(req.query), filterAttributes);
+        let a = _.pull(invalidFilters, 'pageSize', 'pageNo', 'limit', 'sort', 'query');
+        // debug("invalidFilters:", invalidFilters);
+        if (a.length !== 0) {
+          response.status = "200";
+          response.description = "No ChargeCodes found";
+          response.data = [];
+          response.totalNoOfPages = 0;
+          response.totalNoOfRecords = 0;
+          res.json(response);
+        } else {
+          var sort = _.get(req.query, "sort", {});
+          var orderby = sortable(sort);
+          limit = (+pageSize < +limit) ? pageSize : limit;
+          Promise.all([chargeCode.find(filter, orderby, skipCount, limit, ipAddress, createdBy), chargeCode.find(filter, orderby, 0, 0, ipAddress, createdBy)])
+            .then(findResponse => {
+              response.status = "200";
+              response.data = findResponse[0];
+              response.description = `Found ${findResponse[0].length} Charge Code/s`;
+              response.totalNoOfPages = Math.ceil(findResponse[1].length / pageSize);
+              response.totalNoOfRecords = findResponse[1].length;
+              res.status(200).send(response);
+            })
+            .catch(error => {
+              response.status = "400";
+              response.data = error;
+              response.description = `Failed to Fetch : ${error.message}`;
+              response.totalNoOfRecords = 0;
+              response.totalNoOfPages = 0;
+              res.status(400).send(response);
+            });
+        }
       } catch (error) {
         response.status = "400";
         response.data = error;
