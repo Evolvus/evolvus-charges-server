@@ -147,7 +147,7 @@ module.exports = (router) => {
         object.updatedDateAndTime = new Date().toISOString();
         chargePlan.update(req.params.name, object, ipAddress, createdBy).then((result) => {
           response.data = result;
-          response.description = "Updated successfully";
+          response.description = `ChargePlan ${req.params.name} Updated successfully`;
           res.status(200).send(response);
         }).catch(e => {
           debug(`Updating ChargePlan promise failed: ${e}`);

@@ -253,7 +253,7 @@ module.exports = (router) => {
         object.updatedDateAndTime = new Date().toISOString();
         corporateLinkage.update(req.params.utilityCode, object, ipAddress, createdBy).then((result) => {
           response.data = result;
-          response.description = "Updated successfully";
+          response.description = `Corporate Linkage ${req.params.utilityCode} Updated successfully`;
           res.status(200).send(response);
         }).catch((e) => {
           debug(`Update CorporateLinkage promise failed: ${e}`);

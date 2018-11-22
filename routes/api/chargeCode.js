@@ -183,10 +183,10 @@ module.exports = router => {
         object.amount = Number(object.amount.toFixed(2));
         object.createdBy = object.updatedBy = req.header(userHeader);
         object.updatedDateAndTime = new Date().toISOString();
-        chargeCode.update(req.params.name, object, ipAddress, createdBy).then((result) => {
+        chargeCode.update(req.params.name, object, ipAddress, createdBy).then((result) => {          
           response.data = result;
           response.description = `Modified ${
-                                req.query.name
+                                req.params.name
                               } Charge Code successfully`;
           res.status(200).send(response);
         }).catch((e) => {
