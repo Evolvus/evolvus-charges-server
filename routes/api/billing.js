@@ -12,11 +12,11 @@ const PAGE_SIZE = 20;
 const ORDER_BY = process.env.ORDER_BY || {
   updatedDateAndTime: -1
 };
-const utilityCodeHeader = "X-TENANT-ID";
+const tenantIdHeader = "X-TENANT-ID";
 const userHeader = "X-USER";
 const ipHeader = "X-IP-HEADER";
 
-var attributes = ["corporateName", "utilityCode", "billDate", "billFrequency", "billNumber", "billPeriod", "billStatus", "actualChargesAmount", "actualGSTAmount", "actualTotalAmount", "finalChargesAmount", "finalGSTAmount", "finalTotalAmount", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime", "processingStatus", "wfInstanceId", "details", "remarks"];
+var attributes = ["corporateName", "utilityCode", "billDate", "billFrequency", "billNumber", "billPeriod", "billStatus", "actualChargesAmount", "actualGSTAmount", "actualTotalAmount", "finalChargesAmount", "finalGSTAmount", "finalTotalAmount", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime", "processingStatus", "wfInstanceId", "details", "remarks", "reattemptedDateAndTime", "reattemptedStatus", "manualStatusChangeFlag"];
 var filterAttributes = ["utilityCode", "billNumber", "billPeriod", "billDate", "billStatus"];
 
 var applicationURL = process.env.CDA_URL || "http://10.10.69.193:3031/chargesTxnDetails";
@@ -112,7 +112,7 @@ module.exports = (router) => {
           var sort = _.get(req.query, "sort", {});
           var orderby = sortable(sort);
           limit = (+pageSize < +limit) ? pageSize : limit;
-            Promise.all([billing.find(filter, orderby, skipCount, limit, ipAddress, createdBy), billing.find(filter, orderby, 0, 0, ipAddress, createdBy)])
+          Promise.all([billing.find(filter, orderby, skipCount, limit, ipAddress, createdBy), billing.find(filter, orderby, 0, 0, ipAddress, createdBy)])
             .then(findResponse => {
               response.status = "200";
               response.data = findResponse[0];
@@ -120,7 +120,7 @@ module.exports = (router) => {
               response.totalNoOfPages = Math.ceil(findResponse[1].length / pageSize);
               response.totalNoOfRecords = findResponse[1].length;
               res.status(200).send(response);
-            }) .catch(error => {
+            }).catch(error => {
               response.status = "400";
               response.data = error;
               response.description = `Failed to Fetch : ${error.message}`;
@@ -129,7 +129,7 @@ module.exports = (router) => {
               res.status(400).send(response);
             });
         }
-      }catch (error) {
+      } catch (error) {
         debug(`Try-catch failed: ${error}`);
         response.status = "400";
         response.data = error;
@@ -178,7 +178,7 @@ module.exports = (router) => {
 
   router.route("/private/api/billing/:billNumber")
     .put((req, res, next) => {
-      const utilityCode = req.header(utilityCodeHeader);
+      const tenantId = req.header(tenantIdHeader);
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       const response = {
@@ -190,12 +190,21 @@ module.exports = (router) => {
         let body = _.pick(req.body, attributes);
         body.updatedBy = createdBy;
         body.lastUpdatedDate = new Date().toISOString();
-        debug(`Bill workflow update API:Input parameters are: utilityCode:${utilityCode},ipAddress:${ipAddress},createdBy:${createdBy},billNumber:${req.params.billNumber},updateObject:${JSON.stringify(body)}`);
-        billing.updateWorkflow(utilityCode, ipAddress, createdBy, req.params.billNumber, body).then((updatedBill) => {
-          response.status = "200";
-          response.description = `${req.params.billNumber} Bill workflow status has been updated successfully `;
-          response.data = body;
-          res.status(200).json(response);
+        billing.find({ "billNumber": req.params.billNumber }, {}, 0, 0, ipAddress, createdBy).then((bill) => {
+          debug(`Bill workflow update API:Input parameters are: utilityCode:${bill[0].utilityCode},ipAddress:${ipAddress},createdBy:${createdBy},billNumber:${req.params.billNumber},updateObject:${JSON.stringify(body)}`);
+          billing.updateWorkflow(bill[0].utilityCode, ipAddress, createdBy, req.params.billNumber, body).then((updatedBill) => {
+            response.status = "200";
+            response.description = `${req.params.billNumber} Bill workflow status has been updated successfully `;
+            response.data = body;
+            res.status(200).json(response);
+          }).catch((e) => {
+            var reference = shortid.generate();
+            debug(`Bill update workflow promise failed due to ${e} and referenceId:${reference}`);
+            response.status = "400";
+            response.description = `Unable to update Bill workflow status due to ${e}`;
+            response.data = {};
+            res.status(400).json(response);
+          });
         }).catch((e) => {
           var reference = shortid.generate();
           debug(`Bill update workflow promise failed due to ${e} and referenceId:${reference}`);
@@ -203,7 +212,7 @@ module.exports = (router) => {
           response.description = `Unable to update Bill workflow status due to ${e}`;
           response.data = {};
           res.status(400).json(response);
-        });
+        })
       } catch (e) {
         var reference = shortid.generate();
         debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
