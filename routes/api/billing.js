@@ -368,6 +368,45 @@ module.exports = (router) => {
       })
     })
 
+  router.route('/billing/updateWithoutWorkflow/:billNumber')
+    .put((req, res, next) => {
+      var response = {
+        status: "200",
+        data: {},
+        description: ""
+      };
+      const createdBy = _.get("X-USER", req.header, "SYSTEM");
+      const ipAddress = _.get("X-IP-HEADER", req.header, "127.0.0.1");
+
+      try {
+        var object = _.pick(req.body, ["manualStatusChangeFlag", "postingFailureReason"]);
+        if (_.isEmpty(object)) {
+          throw new Error("These attributes cannot be updated");
+        } else {
+          debug(`Input object is: ${JSON.stringify(object)}`);
+          object.updatedBy = createdBy;
+          object.updatedDateAndTime = new Date().toISOString();
+          billing.updateWithoutWorkflow(req.params.billNumber, object, ipAddress, createdBy).then((result) => {
+            debug(`Updated Bill ${req.params.billNumber}`);
+            response.data = result;
+            response.description = "Updated successfully";
+            res.status(200).send(response);
+          }).catch(e => {
+            debug(`Updating Bill without workflow promise failed: ${e}`);
+            response.status = "400";
+            response.data = {};
+            response.description = e;
+            res.status(400).send(response);
+          });
+        }
+      } catch (error) {
+        debug(`try-catch promise failed`, error);
+        response.status = "400";
+        response.data = {};
+        response.description = error;
+        res.status(400).send(response);
+      }
+    });
 };
 
 
