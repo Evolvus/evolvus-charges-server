@@ -38,9 +38,8 @@ module.exports = router => {
       try {
         var object = _.pick(req.body, coreAttributes);
         if (object.amount != null) {
-          object.amount = object.amount.toFixed(2);
+          object.amount = Number(Number(object.amount).toFixed(2));
         }
-        object.amount = Number(object.amount);
         object.createdBy = object.updatedBy = req.header(userHeader);
         object.updatedDateAndTime = object.createdDateAndTime = new Date().toISOString();
         var schemeTypeFilter = {
@@ -50,15 +49,15 @@ module.exports = router => {
           name: object.transactionType
         };
         Promise.all([
-            schemeType.find(schemeTypeFilter, {}, 0, 1, req.ip, object.createdBy),
-            transactionType.find(
-              transactionTypeFilter, {},
-              0,
-              1,
-              req.ip,
-              object.createdBy
-            )
-          ])
+          schemeType.find(schemeTypeFilter, {}, 0, 1, req.ip, object.createdBy),
+          transactionType.find(
+            transactionTypeFilter, {},
+            0,
+            1,
+            req.ip,
+            object.createdBy
+          )
+        ])
           .then(findResponse => {
             if (_.isEmpty(findResponse[0])) {
               throw new Error("Invalid Scheme Type");
@@ -71,7 +70,7 @@ module.exports = router => {
                   response.data = result;
                   response.description = `Saved ${
                     object.name
-                  } Charge Code successfully`;
+                    } Charge Code successfully`;
                   res.status(200).send(response);
                 })
                 .catch(e => {
@@ -126,7 +125,7 @@ module.exports = router => {
           throw new Error("skipCount must be positive value or 0");
         }
         var filterValues = _.pick(req.query, filterAttributes);
-        var filter = _.omitBy(filterValues, function(value, key) {
+        var filter = _.omitBy(filterValues, function (value, key) {
           return value.startsWith("undefined") || value.length == 0;
         });
         var invalidFilters = _.difference(_.keys(req.query), filterAttributes);
@@ -183,11 +182,11 @@ module.exports = router => {
         object.amount = Number(object.amount.toFixed(2));
         object.createdBy = object.updatedBy = req.header(userHeader);
         object.updatedDateAndTime = new Date().toISOString();
-        chargeCode.update(req.params.name, object, ipAddress, createdBy).then((result) => {          
+        chargeCode.update(req.params.name, object, ipAddress, createdBy).then((result) => {
           response.data = result;
           response.description = `Modified ${
-                                req.params.name
-                              } Charge Code successfully`;
+            req.params.name
+            } Charge Code successfully`;
           res.status(200).send(response);
         }).catch((e) => {
           response.status = "400";
