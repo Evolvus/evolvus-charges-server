@@ -23,7 +23,6 @@ module.exports = (router) => {
       const ipAddress = req.header(ipHeader);
       try {
         var object = _.pick(req.body, attributes);
-
         object.createdBy = createdBy;
         object.createdDateAndTime = new Date().toISOString();
         object.updatedBy = object.createdBy;
@@ -51,12 +50,14 @@ module.exports = (router) => {
         data: [],
         description: ""
       };
+      const createdBy = req.header(userHeader);
+      const ipAddress = req.header(ipHeader);
       try {
         var limit = _.get(req.query, "limit", LIMIT);
         var skipCount = 0;
         var sort = _.get(req.query, "sort", {});
         var orderby = sortable(sort);
-        schemeType.find({}, orderby, skipCount, limit, req.ip, "").then((result) => {
+        schemeType.find({}, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
           response.description = "";
           response.data = result;
           res.status(200).send(response);
