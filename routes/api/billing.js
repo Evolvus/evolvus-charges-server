@@ -98,6 +98,16 @@ module.exports = (router) => {
         var filter = _.omitBy(req.query, function (value, key) {
           return value.startsWith("undefined") || value.length == 0;
         });
+        if (filter.billDate != null) {
+          var date = new Date(filter.billDate).toISOString();
+          var start = new Date(date);
+          start.setHours(0, 0, 0, 0);
+          var end = new Date(date);
+          end.setHours(23, 59, 59, 999);
+          filter.fromDate = start;
+          filter.toDate = end;
+          delete filter.billDate;
+        }
         var invalidFilters = _.difference(_.keys(req.query), filterAttributes);
         let a = _.pull(invalidFilters, 'fromDate', 'toDate', 'pageSize', 'pageNo', 'limit', 'sort', 'query');
         debug("invalidFilters:", invalidFilters);
