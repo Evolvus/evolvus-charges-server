@@ -1,11 +1,13 @@
+var debug = require("debug")("evolvus-charge-code:index");
 var chargeCode = require("@evolvus/evolvus-charges-charge-code");
 var schemeType = require("@evolvus/evolvus-charges-scheme-type");
 var transactionType = require("@evolvus/evolvus-charges-transaction-type");
+const shortid = require("shortid");
 
 const _ = require("lodash");
 
 const userHeader = "X-USER";
-
+const tenantHeader = "X-TENANT-ID";
 const ipHeader = "X-IP-HEADER";
 
 var coreAttributes = [
@@ -18,7 +20,7 @@ var coreAttributes = [
   "createdBy"
 ];
 
-var filterAttributes = ["name", "type", "schemeType", "transactionType", "createdBy", "amount"];
+var filterAttributes = ["tenantId", "name", "type", "schemeType", "transactionType", "createdBy", "amount", "processingStatus", "activationStatus"];
 
 const LIMIT = process.env.LIMIT || 20;
 const PAGE_SIZE = 20;
@@ -35,8 +37,12 @@ module.exports = router => {
         data: {},
         description: ""
       };
+      const tenantId = req.header(tenantHeader);
+      var createdBy = req.header(userHeader);
+      var ipAddress = req.header(ipHeader);
       try {
         var object = _.pick(req.body, coreAttributes);
+        object.tenantId = tenantId;
         if (object.amount != null) {
           object.amount = Number(Number(object.amount).toFixed(2));
         }
@@ -65,7 +71,7 @@ module.exports = router => {
               throw new Error("Invalid Transaction Type");
             } else {
               chargeCode
-                .save(object, req.ip, "")
+                .save(tenantId, object, ipAddress, createdBy)
                 .then(result => {
                   response.data = result;
                   response.description = `Saved ${
@@ -176,13 +182,15 @@ module.exports = router => {
         description: ""
       };
       try {
+        const tenantId = req.header(tenantHeader);
         var createdBy = req.header(userHeader);
         var ipAddress = req.header(ipHeader);
         var object = _.pick(req.body, coreAttributes);
         object.amount = Number(object.amount.toFixed(2));
         object.createdBy = object.updatedBy = req.header(userHeader);
         object.updatedDateAndTime = new Date().toISOString();
-        chargeCode.update(req.params.name, object, ipAddress, createdBy).then((result) => {
+        object.processingStatus = "PENDING_AUTHORIZATION";
+        chargeCode.update(tenantId, req.params.name, object, ipAddress, createdBy).then((result) => {
           response.data = result;
           response.description = `Modified ${
             req.params.name
@@ -199,6 +207,45 @@ module.exports = router => {
         response.data = error;
         response.description = "Failed to Update Charge Codes";
         res.status(400).send(response);
+      }
+    });
+
+  router.route("/private/api/chargeCode/:id")
+    .put((req, res, next) => {
+      const tenantId = req.header(tenantHeader);
+      const createdBy = req.header(userHeader);
+      const ipAddress = req.header(ipHeader);
+      const response = {
+        "status": "200",
+        "description": "",
+        "data": []
+      };
+      debug("query: " + JSON.stringify(req.query));
+      try {
+        let body = _.pick(req.body, filterAttributes);
+        body.updatedBy = req.header(userHeader);
+        body.lastUpdatedDate = new Date().toISOString();
+        debug(`user workflow update API:Input parameters are: tenantId:${tenantId},ipAddress:${ipAddress},createdBy:${createdBy},id:${req.params.id},updateObject:${JSON.stringify(body)}`);
+        chargeCode.updateWorkflow(tenantId, ipAddress, createdBy, req.params.id, body).then((updatedUser) => {
+          response.status = "200";
+          response.description = `${req.params.id} User workflow status has been updated successfully `;
+          response.data = body;
+          res.status(200).json(response);
+        }).catch((e) => {
+          var reference = shortid.generate();
+          debug(`user update workflow promise failed due to ${e} and referenceId:${reference}`);
+          response.status = "400";
+          response.description = `Unable to update User workflow status due to ${e}`;
+          response.data = e.toString()
+          res.status(400).json(response);
+        });
+      } catch (e) {
+        var reference = shortid.generate();
+        debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
+        response.status = "400";
+        response.description = `Unable to update User workflow status due to ${e}`;
+        response.data = e.toString();
+        res.status(400).json(response);
       }
     });
 };
