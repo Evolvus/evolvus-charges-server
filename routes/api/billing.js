@@ -3,9 +3,11 @@ var moment = require('moment');
 
 const _ = require("lodash");
 const corporateLinkage = require("@evolvus/evolvus-charges-corporate-linkage");
+const glParameters = require("@evolvus/evolvus-charges-gl-parameters");
 const billing = require("@evolvus/evolvus-charges-billing");
 const axios = require("axios");
 var shortid = require('shortid');
+const fs = require("fs");
 
 const LIMIT = process.env.LIMIT || 20;
 const PAGE_SIZE = 20;
@@ -21,6 +23,7 @@ var filterAttributes = ["utilityCode", "billNumber", "billPeriod", "billDate", "
 
 var applicationURL = process.env.CDA_URL || "http://10.10.69.193:3031/chargesTxnDetails";
 var timeOut = process.env.TIME_OUT || 5000;
+var gstFileFormat = process.env.GST_FILE_PATH || "/home/user/KAVYAK/CHARGES/GST_REPORT/evolvus-charges-server/routes/api/gst.json";
 
 var instance = axios.create({
   baseURL: applicationURL,
@@ -449,9 +452,86 @@ module.exports = (router) => {
         res.status(400).send(response);
       }
     });
+
+  router.route("/gstreport")
+    .get((req, res, next) => {
+      var response = {
+        status: "200",
+        data: {},
+        description: ""
+      };
+      const createdBy = req.header(userHeader);
+      const ipAddress = req.header(ipHeader);
+      try {
+        filter = {
+          "billPeriod": req.query.billPeriod,
+          "processingStatus": "CBS_POSTING_SUCCESSFUL"
+        }
+        Promise.all([billing.find(filter, ORDER_BY, 0, 0, ipAddress, createdBy), glParameters.find({}, {}, 0, 0, ipAddress, createdBy), corporateLinkage.find({}, {}, 0, 0, ipAddress, createdBy)])
+          .then(result => {
+            fs.readFile(gstFileFormat, function (err, data) {
+              if (err) {
+                response.status = "400";
+                response.data = [];
+                response.description = `Failed to fetch GST report records due to ${err}`;
+                res.status(400).send(response);
+              } else {
+                var jsonObject = JSON.parse(data.toString());
+                calculateGSTReportValues(result[2], result[0], jsonObject).then((result) => {
+                  response.status = "200";
+                  response.data = result;
+                  response.description = `GST Records fetched successfully`;
+                  res.status(200).send(response);
+                })
+              }
+            });
+          }).catch(error => {
+            response.status = "400";
+            response.data = error;
+            response.description = `Failed to Fetch : ${error.message}`;
+            response.totalNoOfRecords = 0;
+            response.totalNoOfPages = 0;
+            res.status(400).send(response);
+          });
+      } catch (error) {
+        debug(`Try-catch failed: ${error}`);
+        response.status = "400";
+        response.data = error;
+        response.description = "Failed to find";
+        res.status(400).send(response);
+      }
+    });
+
+
 };
 
-
+function calculateGSTReportValues(corporateData, bills, smplGSTRecord) {
+  return new Promise((resolve, reject) => {
+    var allCrpGSTVal = [];
+    var uniqueCorporateIds = _.uniqBy(corporateData, (corporate) => {
+      return corporate.tenantId;
+    });
+    uniqueCorporateIds.map((corporate) => {
+      var GSTRecord = _.clone(smplGSTRecord);
+      GSTRecord.customerId = corporate.tenantId;
+      GSTRecord.accountId = corporate.accountNumber;
+      GSTRecord.gstin = corporate.GSTINNumber;
+      GSTRecord.customerName = corporate.corporateName;
+      GSTRecord.transactionPricedCharge = 0;
+      GSTRecord.taxAmount = 0;
+      var curCrpBills = [];
+      curCrpBills = bills.filter((bill) => {
+        return bill.tenantId == corporate.tenantId;
+      });
+      curCrpBills.map((curCrpBill) => {
+        GSTRecord.transactionPricedCharge = GSTRecord.transactionPricedCharge + curCrpBill.finalChargesAmount;
+        GSTRecord.taxAmount = GSTRecord.taxAmount + curCrpBill.finalGSTAmount;
+      });
+      allCrpGSTVal.push(GSTRecord);
+    });
+    resolve(allCrpGSTVal);
+  });
+}
 
 function sortable(sort) {
   if (typeof sort === 'undefined' ||
