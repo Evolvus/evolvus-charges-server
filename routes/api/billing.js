@@ -1,5 +1,8 @@
 var debug = require("debug")("evolvus-charges-server:server");
 var moment = require('moment');
+var path = require('path');
+
+
 
 const _ = require("lodash");
 const corporateLinkage = require("@evolvus/evolvus-charges-corporate-linkage");
@@ -127,6 +130,7 @@ module.exports = (router) => {
           limit = (+pageSize < +limit) ? pageSize : limit;
           Promise.all([billing.find(filter, orderby, skipCount, limit, ipAddress, createdBy), billing.find(filter, orderby, 0, 0, ipAddress, createdBy)])
             .then(findResponse => {
+
               response.status = "200";
               response.data = findResponse[0];
               response.description = `Found ${findResponse[0].length} Charge Code/s`;
@@ -453,6 +457,44 @@ module.exports = (router) => {
       }
     });
 
+  router.route('/billing/generatePDF')
+    .get((req, res, next) => {
+      var response = {
+        status: "200",
+        data: {},
+        description: ""
+      };
+      const createdBy = _.get("X-USER", req.header, "SYSTEM");
+      const ipAddress = _.get("X-IP-HEADER", req.header, "127.0.0.1");
+
+      try {
+        var filterValues = _.pick(req.query, filterAttributes);
+        var filter = _.omitBy(req.query, function (value, key) {
+          return value.startsWith("undefined") || value.length == 0;
+        });
+        console.log('filterrrrr', filter);
+        billing.generatePdf(filter, ipAddress, createdBy)
+          .then(findResponse => {
+            debug("PDF generated successfully.");
+            res.sendFile(findResponse.filename);
+          }).catch(e => {
+            debug(`Bill PDF generation promise failed: ${e}`);
+            response.status = "400";
+            response.data = {};
+            response.description = e;
+            res.status(400).send(response);
+
+          });
+
+      } catch (error) {
+        debug(`try-catch promise failed`, error);
+        response.status = "400";
+        response.data = {};
+        response.description = error;
+        res.status(400).send(response);
+      }
+    });
+
   router.route("/gstreport")
     .get((req, res, next) => {
       var response = {
@@ -501,8 +543,6 @@ module.exports = (router) => {
         res.status(400).send(response);
       }
     });
-
-
 };
 
 function calculateGSTReportValues(corporateData, bills, smplGSTRecord) {
@@ -532,6 +572,8 @@ function calculateGSTReportValues(corporateData, bills, smplGSTRecord) {
     resolve(allCrpGSTVal);
   });
 }
+
+
 
 function sortable(sort) {
   if (typeof sort === 'undefined' ||
