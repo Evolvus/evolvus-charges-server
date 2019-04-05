@@ -26,7 +26,7 @@ var filterAttributes = ["utilityCode", "billNumber", "billPeriod", "billDate", "
 
 var applicationURL = process.env.CDA_URL || "http://10.10.69.193:3031/chargesTxnDetails";
 var timeOut = process.env.TIME_OUT || 5000;
-var gstFileFormat = process.env.GST_FILE_PATH || "/home/user/KAVYAK/CHARGES/GST_REPORT/evolvus-charges-server/routes/api/gst.json";
+var filePath = process.env.REPORT_FILE_PATH || "/home/user/KAVYAK/CHARGES/GST_REPORT/evolvus-charges-server/routes/api/";
 
 var instance = axios.create({
   baseURL: applicationURL,
@@ -511,7 +511,7 @@ module.exports = (router) => {
         }
         Promise.all([billing.find(filter, ORDER_BY, 0, 0, ipAddress, createdBy), glParameters.find({}, {}, 0, 0, ipAddress, createdBy), corporateLinkage.find({}, {}, 0, 0, ipAddress, createdBy)])
           .then(result => {
-            fs.readFile(gstFileFormat, function (err, data) {
+            fs.readFile(`${filePath}gst.json`, function (err, data) {
               if (err) {
                 response.status = "400";
                 response.data = [];
@@ -523,6 +523,76 @@ module.exports = (router) => {
                   response.status = "200";
                   response.data = result;
                   response.description = `GST Records fetched successfully`;
+                  res.status(200).send(response);
+                })
+              }
+            });
+          }).catch(error => {
+            response.status = "400";
+            response.data = error;
+            response.description = `Failed to Fetch : ${error.message}`;
+            response.totalNoOfRecords = 0;
+            response.totalNoOfPages = 0;
+            res.status(400).send(response);
+          });
+      } catch (error) {
+        debug(`Try-catch failed: ${error}`);
+        response.status = "400";
+        response.data = error;
+        response.description = "Failed to find";
+        res.status(400).send(response);
+      }
+    });
+
+  router.route("/summaryreport")
+    .get((req, res, next) => {
+      var response = {
+        status: "200",
+        data: {},
+        description: ""
+      };
+      try {
+        const createdBy = req.header(userHeader);
+        const ipAddress = req.header(ipHeader);
+        var limit = _.get(req.query, "limit", LIMIT);
+        limit = parseInt(limit);
+        if (isNaN(limit)) {
+          throw new Error("limit must be a number");
+        }
+        var pageSize = _.get(req.query, "pageSize", PAGE_SIZE);
+        pageSize = parseInt(pageSize);
+        if (isNaN(pageSize)) {
+          throw new Error("pageSize must be a number");
+        }
+        var pageNo = _.get(req.query, "pageNo", 1);
+        pageNo = parseInt(pageNo);
+        if (isNaN(pageNo)) {
+          throw new Error("pageNo must be a number");
+        }
+        var skipCount = pageSize * (pageNo - 1);
+        if (skipCount < 0) {
+          throw new Error("skipCount must be positive value or 0");
+        }
+        var filterValues = _.pick(req.query, filterAttributes);
+        var filter = _.omitBy(req.query, function (value, key) {
+          return value.startsWith("undefined") || value.length == 0;
+        });
+        var sort = _.get(req.query, "sort", {});
+        var orderby = sortable(sort);
+        Promise.all([billing.find(filter, orderby, 0, 0, ipAddress, createdBy), glParameters.find({}, {}, 0, 0, ipAddress, createdBy), corporateLinkage.find({}, {}, 0, 0, ipAddress, createdBy)])
+          .then(result => {
+            fs.readFile(`${filePath}summary.json`, function (err, data) {
+              if (err) {
+                response.status = "400";
+                response.data = [];
+                response.description = `Failed to fetch Summary report records due to ${err}`;
+                res.status(400).send(response);
+              } else {
+                var jsonObject = JSON.parse(data.toString());
+                summaryReport(result[2], result[0], result[1][0].GSTRate, jsonObject).then((result) => {
+                  response.status = "200";
+                  response.data = result;
+                  response.description = `Summary Records fetched successfully`;
                   res.status(200).send(response);
                 })
               }
@@ -574,6 +644,68 @@ function calculateGSTReportValues(corporateData, bills, smplGSTRecord) {
 }
 
 
+function summaryReport(corporateData, bills, gstRate, reportObject) {
+  return new Promise((resolve, reject) => {
+    var reports = [];
+    var object = {};
+    var gst = (gstRate / 2).toFixed(2);
+    corporateData.map((corporate) => {
+      object[`${corporate.utilityCode}`] = corporate.corporateAccount;
+    });
+    var details = {};
+    bills.map((bill) => {
+      bill.details.map((element) => {
+        details[`${element.name}.rate`] = element.rate;
+        details[`${element.name}.transactions`] = element.transactions;
+      });
+      var report = _.clone(reportObject);
+      report["Utility Code"] = bill.utilityCode;
+      report["Customer Name"] = bill.corporateName;
+      report["Account Number"] = object[bill.utilityCode];
+      report["Bill Number"] = bill.billNumber;
+      report["Bill Date"] = bill.billDate.toUTCString();
+      report["Bill Period"] = bill.billPeriod;
+      report["Bill Status"] = bill.billStatus;
+      report["Bulk Mandate Creation charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Creation.rate']) ? details['Bulk Mandate Creation.rate'] : 'NA';
+      report["Bulk Mandate Creation Transactions"] = isNullOrUndefined(details['Bulk Mandate Creation.transactions']) ? details['Bulk Mandate Creation.transactions'] : 'NA';
+      report["Single Paper Mandate Creation charges/Transaction"] = isNullOrUndefined(details['Single Paper Mandate Creation.rate']) ? details['Single Paper Mandate Creation.rate'] : 'NA';
+      report["Single Paper Mandate Creation Transactions"] = isNullOrUndefined(details['Single Paper Mandate Creation.transactions']) ? details['Single Paper Mandate Creation.transactions'] : 'NA';
+      report["Single Paper Mandate Amendment charges/Transaction"] = isNullOrUndefined(details['Single Paper Mandate Amendment.rate']) ? details['Single Paper Mandate Amendment.rate'] : 'NA';
+      report["Single Paper Mandate Amendment Transactions"] = isNullOrUndefined(details['Single Paper Mandate Amendment.transactions']) ? details['Single Paper Mandate Amendment.transactions'] : 'NA';
+      report["Single Paper Mandate Cancelation charges/Transaction"] = isNullOrUndefined(details['Single Paper Mandate Cancelation.rate']) ? details['Single Paper Mandate Cancelation.rate'] : 'NA';
+      report["Single Paper Mandate CancelationTransactions"] = isNullOrUndefined(details['Single Paper Mandate Cancelation.transactions']) ? details['Single Paper Mandate Cancelation.transactions'] : 'NA';
+      report["Bulk Mandate Amendment charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Amendment.rate']) ? details['Bulk Mandate Amendment.rate'] : 'NA';
+      report["Bulk Mandate Amendment Transactions"] = isNullOrUndefined(details['Bulk Mandate Amendment.transactions']) ? details['Bulk Mandate Amendment.transactions'] : 'NA';
+      report["Bulk Mandate Cancelation charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Cancelation.rate']) ? details['Bulk Mandate Cancelation.rate'] : 'NA';
+      report["Bulk Mandate Cancelation Transactions"] = isNullOrUndefined(details['Bulk Mandate Cancelation.transactions']) ? details['Bulk Mandate Cancelation.transactions'] : 'NA';
+      report["Single Paper Mandate Creation-ONUS charges/Transaction"] = isNullOrUndefined(details['Single Paper Mandate Creation-ONUS.rate']) ? details['Single Paper Mandate Creation-ONUS.rate'] : 'NA';
+      report["Single Paper Mandate Creation-ONUS Transactions"] = isNullOrUndefined(details['Single Paper Mandate Creation-ONUS.transactions']) ? details['Single Paper Mandate Creation-ONUS.transactions'] : 'NA';
+      report["Single Paper Mandate Amendment-ONUS charges/Transaction"] = isNullOrUndefined(details['Single Paper Mandate Amendment-ONUS.rate']) ? details['Single Paper Mandate Amendment-ONUS.rate'] : 'NA';
+      report["Single Paper Mandate Amendment-ONUS Transactions"] = isNullOrUndefined(details['Single Paper Mandate Amendment-ONUS.transactions']) ? details['Single Paper Mandate Amendment-ONUS.transactions'] : 'NA';
+      report["Single Paper Mandate Cancellation-ONUS charges/Transaction"] = isNullOrUndefined(details['Single Paper Mandate Cancellation-ONUS.rate']) ? details['Single Paper Mandate Cancellation-ONUS.rate'] : 'NA';
+      report["Single Paper Mandate Cancellation-ONUS Transactions"] = isNullOrUndefined(details['Single Paper Mandate Cancellation-ONUS.transactions']) ? details['Single Paper Mandate Cancellation-ONUS.transactions'] : 'NA';
+      report["Bulk Mandate Creation-ONUS charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Creation-ONUS.rate']) ? details['Bulk Mandate Creation-ONUS.rate'] : 'NA';
+      report["Bulk Mandate Creation-ONUS Transactions"] = isNullOrUndefined(details['Bulk Mandate Creation-ONUS.transactions']) ? details['Bulk Mandate Creation-ONUS.transactions'] : 'NA';
+      report["Auto Reattemptof Payment charges/Transaction"] = isNullOrUndefined(details['Auto Reattemptof Payment.rate']) ? details['Auto Reattemptof Payment.rate'] : 'NA';
+      report["Auto Reattemptof Payment Transactions"] = isNullOrUndefined(details['Auto Reattemptof Payment.transactions']) ? details['Auto Reattemptof Payment.transactions'] : 'NA';
+      report["Bulk Payment Creation charges/Transaction"] = isNullOrUndefined(details['Bulk Payment Creation.rate']) ? details['Bulk Payment Creation.rate'] : 'NA';
+      report["Bulk Payment Creation Transactions"] = isNullOrUndefined(details['Bulk Payment Creation.transactions']) ? details['Bulk Payment Creation.transactions'] : 'NA';
+      report["Auto Collection of Payment charges/Transaction"] = isNullOrUndefined(details['Auto Collection of Payment.rate']) ? details['Auto Collection of Payment.rate'] : 'NA';
+      report["Auto Collection of Payment Transactions"] = isNullOrUndefined(details['Auto Collection of Payment.transactions']) ? details['Auto Collection of Payment.transactions'] : 'NA';
+      report["Total"] = bill.finalChargesAmount;
+      report[`CGST@${gst}%`] = bill.finalGSTAmount / 2;
+      report[`SGST@${gst}%`] = bill.finalGSTAmount / 2;
+      report["Total Charges"] = bill.finalTotalAmount;
+      reports.push(report);
+    });
+    resolve(reports);
+  });
+}
+
+function isNullOrUndefined(input) {
+  if (input != null || input === 0) return true;
+  else return false;
+}
 
 function sortable(sort) {
   if (typeof sort === 'undefined' ||
