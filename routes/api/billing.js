@@ -621,8 +621,8 @@ function calculateGSTReportValues(corporateData, bills, smplGSTRecord) {
     uniqueCorporateIds.map((corporate) => {
       var GSTRecord = _.clone(smplGSTRecord);
       GSTRecord.customerId = corporate.tenantId;
-      GSTRecord.accountId = corporate.accountNumber;
-      GSTRecord.gstin = corporate.GSTINNumber;
+      GSTRecord.accountId = corporate.corporateAccount;
+      GSTRecord.gstin = corporate.GSTINnumber;
       GSTRecord.customerName = corporate.corporateName;
       GSTRecord.transactionPricedCharge = 0;
       GSTRecord.taxAmount = 0;
