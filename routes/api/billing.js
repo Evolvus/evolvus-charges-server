@@ -1,9 +1,6 @@
 var debug = require("debug")("evolvus-charges-server:server");
 var moment = require('moment');
 var path = require('path');
-
-
-
 const _ = require("lodash");
 const corporateLinkage = require("@evolvus/evolvus-charges-corporate-linkage");
 const glParameters = require("@evolvus/evolvus-charges-gl-parameters");
@@ -26,7 +23,7 @@ var filterAttributes = ["utilityCode", "billNumber", "billPeriod", "billDate", "
 
 var applicationURL = process.env.CDA_URL || "http://10.10.69.193:3031/chargesTxnDetails";
 var timeOut = process.env.TIME_OUT || 5000;
-var filePath = process.env.REPORT_FILE_PATH || "/home/user/KAVYAK/CHARGES/GST_REPORT/evolvus-charges-server/routes/api/";
+var filePath = process.env.STATIC_FILES_PATH || "/home/user/KAVYAK/CHARGES/GST_REPORT/evolvus-charges-server/routes/api/";
 
 var instance = axios.create({
   baseURL: applicationURL,
