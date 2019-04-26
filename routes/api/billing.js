@@ -286,8 +286,6 @@ module.exports = (router) => {
               debug(`Payment object for utilityCode ${corporate.utilityCode} is ${JSON.stringify(paymentObject)}`);
               Promise.all([axios.post(applicationURL, mandateObject), axios.post(applicationURL, paymentObject)]).then((response) => {
                 let totalTransactions = [];
-                console.log(response[1].data.data && response[0].data.data.length > 0, "DATA");
-
                 if (response[0].data.data && response[0].data.data.length > 0) {
                   totalTransactions.push(response[0].data.data[0]);
                   var listOfMandateTxnCodesWithValues = Object.keys(response[0].data.data[0]);
@@ -371,7 +369,7 @@ module.exports = (router) => {
     });
 
   router.route('/reattempt')
-    .put((req, res, next) => {
+    .put((req, res, next) =>   {
       var response = {
         status: "200",
         data: {},
@@ -469,7 +467,6 @@ module.exports = (router) => {
         var filter = _.omitBy(req.query, function (value, key) {
           return value.startsWith("undefined") || value.length == 0;
         });
-        console.log('filterrrrr', filter);
         billing.generatePdf(filter, ipAddress, createdBy)
           .then(findResponse => {
             debug("PDF generated successfully.");
