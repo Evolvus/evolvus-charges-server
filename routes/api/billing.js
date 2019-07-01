@@ -651,8 +651,8 @@ function summaryReport(corporateData, bills, gstRate, reportObject) {
       bill.details.map((element) => {
         details[`${element.name}.rate`] = element.rate;
         details[`${element.name}.transactions`] = element.transactions;
-      });
-      var report = _.clone(reportObject);
+      });            
+      var report = _.clone(reportObject);      
       report["Utility Code"] = bill.utilityCode;
       report["Customer Name"] = bill.corporateName;
       report["Account Number"] = object[bill.utilityCode];
@@ -680,8 +680,12 @@ function summaryReport(corporateData, bills, gstRate, reportObject) {
       report["Single Paper Mandate Cancellation-ONUS Transactions"] = isNullOrUndefined(details['Single Paper Mandate Cancellation-ONUS.transactions']) ? details['Single Paper Mandate Cancellation-ONUS.transactions'] : 'NA';
       report["Bulk Mandate Creation-ONUS charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Creation-ONUS.rate']) ? details['Bulk Mandate Creation-ONUS.rate'] : 'NA';
       report["Bulk Mandate Creation-ONUS Transactions"] = isNullOrUndefined(details['Bulk Mandate Creation-ONUS.transactions']) ? details['Bulk Mandate Creation-ONUS.transactions'] : 'NA';
-      report["Auto Reattemptof Payment charges/Transaction"] = isNullOrUndefined(details['Auto Reattemptof Payment.rate']) ? details['Auto Reattemptof Payment.rate'] : 'NA';
-      report["Auto Reattemptof Payment Transactions"] = isNullOrUndefined(details['Auto Reattemptof Payment.transactions']) ? details['Auto Reattemptof Payment.transactions'] : 'NA';
+      report["Bulk Mandate Amendment-ONUS charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Amendment-ONUS.rate']) ? details['Bulk Mandate Amendment-ONUS.rate'] : 'NA';
+      report["Bulk Mandate Amendment-ONUS Transactions"] = isNullOrUndefined(details['Bulk Mandate Amendment-ONUS.transactions']) ? details['Bulk Mandate Amendment-ONUS.transactions'] : 'NA';
+      report["Bulk Mandate Cancellation-ONUS charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Cancellation-ONUS.rate']) ? details['Bulk Mandate Cancellation-ONUS.rate'] : 'NA';
+      report["Bulk Mandate Cancellation-ONUS Transactions"] = isNullOrUndefined(details['Bulk Mandate Cancellation-ONUS.transactions']) ? details['Bulk Mandate Cancellation-ONUS.transactions'] : 'NA';
+      report["Auto Reattempt of Payment charges/Transaction"] = isNullOrUndefined(details['Auto Reattempt of Payment.rate']) ? details['Auto Reattempt of Payment.rate'] : 'NA';
+      report["Auto Reattempt of Payment Transactions"] = isNullOrUndefined(details['Auto Reattempt of Payment.transactions']) ? details['Auto Reattempt of Payment.transactions'] : 'NA';
       report["Bulk Payment Creation charges/Transaction"] = isNullOrUndefined(details['Bulk Payment Creation.rate']) ? details['Bulk Payment Creation.rate'] : 'NA';
       report["Bulk Payment Creation Transactions"] = isNullOrUndefined(details['Bulk Payment Creation.transactions']) ? details['Bulk Payment Creation.transactions'] : 'NA';
       report["Auto Collection of Payment charges/Transaction"] = isNullOrUndefined(details['Auto Collection of Payment.rate']) ? details['Auto Collection of Payment.rate'] : 'NA';
