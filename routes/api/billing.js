@@ -386,8 +386,8 @@ module.exports = (router) => {
           $gte: start,
           $lt: end
         }
-      }
-      billing.find(filterBills, {}, 0, 0, ipAddress, createdBy).then((bills) => {
+      }      
+      billing.find(filterBills, {}, 0, 0, ipAddress, createdBy).then((bills) => {        
         if (bills.length > 0) {
           Promise.all(bills.map(bill => {
             billing.reattempt(bill, createdBy, ipAddress).then(resp => {
@@ -423,7 +423,7 @@ module.exports = (router) => {
       const ipAddress = _.get("X-IP-HEADER", req.header, "127.0.0.1");
 
       try {
-        var object = _.pick(req.body, ["manualStatusChangeFlag", "postingFailureReason"]);
+        var object = _.pick(req.body, ["manualStatusChangeFlag", "postingFailureReason","errorCode"]);
         if (_.isEmpty(object)) {
           throw new Error("These attributes cannot be updated");
         } else {
