@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@evolvus/evolvus-charges-billing": "^1.0.32",
+    "@evolvus/evolvus-charges-billing": "^1.0.33",
     "@evolvus/evolvus-charges-charge-code": "^1.0.15",
     "@evolvus/evolvus-charges-charge-plan": "^1.0.13",
     "@evolvus/evolvus-charges-corporate-linkage": "^1.0.19",
