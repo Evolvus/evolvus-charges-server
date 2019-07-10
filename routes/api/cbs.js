@@ -28,11 +28,10 @@ module.exports = (router) => {
                 data: {}
             };
             try {
-
                 let object = _.pick(req.query, accountverifyAttributes);
                 object.serviceName = "doGeneralAcctInquiry";
                 object.reqMsgDateTime = new Date().toISOString();
-                axios.post(accenquiryURL, object).then((accountres) => {
+                axios.post(accenquiryURL, object).then((accountres) => {                    
                     debug("Account Status: " + accountres.data.statusFlg);
                     debug("Account Number: " + accountres.data.acctNumber);
                     debug("Account Name: " + accountres.data.acctName);
@@ -44,13 +43,13 @@ module.exports = (router) => {
                     response.data = accountres.data;
                     debug(response.data);
                     res.json(response);
-                }).catch(e => {
+                }).catch(e => {                    
                     response.status = "404";
                     response.description = "Account Verification Failed";
                     response.data = e.toString();
                     res.status(404).json(response);
                 });
-            } catch (e) {
+            } catch (e) {                
                 var reference = shortid.generate();
                 debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
                 response.status = "404";
@@ -66,8 +65,7 @@ module.exports = (router) => {
                 "status": "200",
                 "description": "",
                 "data": {}
-            };
-            
+            };            
             try {
                 const createdBy = req.header(userHeader);
                 const ipAddress = req.header(ipHeader);
@@ -75,10 +73,10 @@ module.exports = (router) => {
                 let filter = {
                     "billNumber": req.body.billNumber
                 }
-                billing.find(filter, {}, 0, 0, ipAddress, createdBy).then((billObject) => {
+                billing.find(filter, {}, 0, 0, ipAddress, createdBy).then((billObject) => {                    
                     if (billObject.length > 0) {
                         Promise.all([glParameters.find({}, {}, 0, 0, ipAddress, createdBy), corporate.find({ "utilityCode": billObject[0].utilityCode }, {}, 0, 0, ipAddress, createdBy)])
-                            .then(result => {                                
+                            .then(result => {                                                                
                                 if (result[0].length > 0 && result[1].length > 0) {
                                     details.serviceName = "XferTrnAdd";
                                     details.reqMsgDateTime = new Date().toISOString();
@@ -93,7 +91,12 @@ module.exports = (router) => {
                                     details.creditTxnRemarksTwo = "";                                    
                                     let object = _.pick(details, accountpostingAttributes);
                                     object.reqMsgDateTime = new Date().toISOString();
-                                    axios.post(accpostingURL, object).then((accountpostres) => {                                        
+                                    axios.post(accpostingURL, object).then((accountpostres) => {                                                                                  
+                                        if(accountpostres.data != null && accountpostres.data.statusFlg != "0" && accountpostres.data.errorCode != null && accountpostres.data.errorCode != "NA") {
+                                            let str = accountpostres.data.errorCode.split("\n");
+                                            debug("Error Code is ",str[0])
+                                            accountpostres.data.errorCode = str[0];
+                                        }
                                         debug(accountpostres.data);
                                         response.data = accountpostres.data;
                                         res.json(response);
@@ -116,14 +119,15 @@ module.exports = (router) => {
                     } else {
                         throw new Error(`Bill ${req.body.billNumber} not found.`);
                     }
-                }).catch(e => {                    
+                }).catch(e => { 
+                    debug("error:",e)                                       
                     response.status = "400";
                     response.description = e;
                     response.data = {};
                     res.status(400).json(response);
                 });
 
-            } catch (e) {                
+            } catch (e) {                                
                 var reference = shortid.generate();
                 debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
                 response.status = "400";
