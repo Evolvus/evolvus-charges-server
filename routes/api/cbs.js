@@ -81,11 +81,11 @@ module.exports = (router) => {
                                     details.serviceName = "XferTrnAdd";
                                     details.reqMsgDateTime = new Date().toISOString();
                                     details.debitAccNumber = result[1][0].corporateAccount;
-                                    details.debitTxnRemarks = "";
+                                    details.debitTxnRemarks = `Debiting from ${result[1][0].corporateAccount}`;
                                     details.debitAmount = billObject[0].finalTotalAmount;
                                     details.creditAccNumberOne = result[0][0].chargesAccount;
                                     details.creditAmountOne = billObject[0].finalChargesAmount;
-                                    details.creditTxnRemarksOne = "";
+                                    details.creditTxnRemarksOne = `Crediting to ${result[0][0].chargesAccount}`;
                                     details.creditAccNumberTwo = result[0][0].GSTAccount;
                                     details.creditAmountTwo = billObject[0].finalGSTAmount;
                                     details.creditTxnRemarksTwo = "";                                    
