@@ -13,7 +13,7 @@ const ipHeader = "X-IP-HEADER";
 
 var corporateURL = process.env.CORPORATE_URL || "http://10.10.69.193:3031/corporateUtilityCodes";
 
-var attributes = ["corporateName", "tenantId", "utilityCode", "chargePlan", "corporateAccount", "billingAddress", "emailId", "GSTINnumber", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
+var attributes = ["corporateName", "tenantId", "utilityCode", "chargePlan", "corporateAccount", "billingAddress", "emailId", "GSTINnumber","returnCharges", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
 var filterAttributes = ["corporateName", "utilityCode", "chargePlan"]
 
 var instance = axios.create({
@@ -31,7 +31,7 @@ module.exports = (router) => {
       };
       const createdBy = _.get("X-USER", req.header, "KAVYAK");
       const ipAddress = _.get("X-IP-HEADER", req.header, "192.168.1.18");
-      try {
+      try {        
         instance.get(corporateURL).then((resp) => {
           if (resp.data && resp.data.data) {
             var selectedUtility = resp.data.data.filter((corporateData) => {
