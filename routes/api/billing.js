@@ -153,7 +153,7 @@ module.exports = (router) => {
     });
 
   router.route('/billing/:billNumber')
-    .put((req, res, next) => {
+    .post((req, res, next) => {
       var response = {
         status: "200",
         data: {},
