@@ -132,7 +132,7 @@ module.exports = (router) => {
 
 
   router.route('/chargePlan/:name')
-    .put((req, res, next) => {
+    .post((req, res, next) => {
       var response = {
         status: "200",
         data: {},
