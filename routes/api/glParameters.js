@@ -80,7 +80,7 @@ module.exports = (router) => {
     });
 
   router.route('/glParameter/:id')
-    .put((req, res, next) => {
+    .post((req, res, next) => {
       var response = {
         status: "200",
         data: {},
