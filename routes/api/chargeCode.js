@@ -175,7 +175,7 @@ module.exports = router => {
     });
 
   router.route('/chargeCode/:name')
-    .post((req, res, next) => {
+    .put((req, res, next) => {
       var response = {
         status: "200",
         data: {},

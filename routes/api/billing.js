@@ -153,7 +153,7 @@ module.exports = (router) => {
     });
 
   router.route('/billing/:billNumber')
-    .post((req, res, next) => {
+    .put((req, res, next) => {
       var response = {
         status: "200",
         data: {},
@@ -413,7 +413,7 @@ module.exports = (router) => {
     })
 
   router.route('/billing/updateWithoutWorkflow/:billNumber')
-    .post((req, res, next) => {
+    .put((req, res, next) => {
       var response = {
         status: "200",
         data: {},
