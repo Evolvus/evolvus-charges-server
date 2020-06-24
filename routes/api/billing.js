@@ -683,7 +683,7 @@ function summaryReport(corporateData, bills, gstRate, reportObject) {
       report["Bulk Mandate Ammend-ONUS charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Ammend-ONUS.rate']) ? details['Bulk Mandate Ammend-ONUS.rate'] : 'NA';
       report["Bulk Mandate Ammend-ONUS Transactions"] = isNullOrUndefined(details['Bulk Mandate Ammend-ONUS.transactions']) ? details['Bulk Mandate Ammend-ONUS.transactions'] : 'NA';
       report["Bulk Mandate Cancel-ONUS charges/Transaction"] = isNullOrUndefined(details['Bulk Mandate Cancel-ONUS.rate']) ? details['Bulk Mandate Cancel-ONUS.rate'] : 'NA';
-      report["Bulk Mandate Cancel-ONUS Transactions"] = isNullOrUndefined(details['Bulk Mandate Cancel-ONUS.transactions']) ? details[Bulk Mandate Cancel-ONUS.transactions'] : 'NA';
+      report["Bulk Mandate Cancel-ONUS Transactions"] = isNullOrUndefined(details['Bulk Mandate Cancel-ONUS.transactions']) ? details['Bulk Mandate Cancel-ONUS.transactions'] : 'NA';
       report["Auto Reattempt of Payment charges/Transaction"] = isNullOrUndefined(details['Auto Reattempt of Payment.rate']) ? details['Auto Reattempt of Payment.rate'] : 'NA';
       report["Auto Reattempt of Payment Transactions"] = isNullOrUndefined(details['Auto Reattempt of Payment.transactions']) ? details['Auto Reattempt of Payment.transactions'] : 'NA';
       report["Bulk Payment Creation charges/Transaction"] = isNullOrUndefined(details['Bulk Payment Creation.rate']) ? details['Bulk Payment Creation.rate'] : 'NA';
