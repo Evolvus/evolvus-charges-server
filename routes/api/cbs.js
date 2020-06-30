@@ -88,7 +88,7 @@ module.exports = (router) => {
                                     details.creditTxnRemarksOne = `Crediting to ${result[0][0].chargesAccount}`;
                                     details.creditAccNumberTwo = result[0][0].GSTAccount;
                                     details.creditAmountTwo = billObject[0].finalGSTAmount;
-                                    details.creditTxnRemarksTwo = "";                                    
+                                    details.creditTxnRemarksTwo = result[0][0].GSTAccountNarration;                                    
                                     let object = _.pick(details, accountpostingAttributes);
                                     object.reqMsgDateTime = new Date().toISOString();
                                     axios.post(accpostingURL, object).then((accountpostres) => {                                                                                  
