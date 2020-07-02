@@ -81,14 +81,35 @@ module.exports = (router) => {
                                     details.serviceName = "XferTrnAdd";
                                     details.reqMsgDateTime = new Date().toISOString();
                                     details.debitAccNumber = result[1][0].corporateAccount;
-                                    details.debitTxnRemarks = `Debiting from ${result[1][0].corporateAccount}`;
+                                    var countONUS = 0,countOFFUS = 0;
+                                    billObject[0].details.forEach(element  => {
+                                     if(element.name.includes('ONUS')&& element.transactions > 0){
+                                         countONUS = countONUS + 1
+                                    }
+                                    else if(!element.name.includes('ONUS')&& element.transactions > 0){
+                                            countOFFUS = countOFFUS + 1   
+                                    }
+                                    else{
+                                        debug("No transactions for", element.name);
+                                    }
+                                    });
+                                    if(countONUS > 0 && countOFFUS > 0)
+                                    {
+                                        details.debitTxnRemarks = `ONUS/OFFUS/CHRG/${billObject[0].utilityCode}/${billObject[0].billPeriod}`  
+                                    }
+                                    else if(countOFFUS > 0){
+                                        details.debitTxnRemarks = `NACH/CHRG/${billObject[0].utilityCode}/${billObject[0].billPeriod}`
+                                    }
+                                    else{
+                                        details.debitTxnRemarks = `DDI/CHRG/${billObject[0].utilityCode}/${billObject[0].billPeriod}`
+                                    }
                                     details.debitAmount = billObject[0].finalTotalAmount;
                                     details.creditAccNumberOne = result[0][0].chargesAccount;
                                     details.creditAmountOne = billObject[0].finalChargesAmount;
-                                    details.creditTxnRemarksOne = `Crediting to ${result[0][0].chargesAccount}`;
+                                    details.creditTxnRemarksOne = `${billObject[0].utilityCode}/${result[1][0].corporateAccount}/${billObject[0].billPeriod}`;
                                     details.creditAccNumberTwo = result[0][0].GSTAccount;
                                     details.creditAmountTwo = billObject[0].finalGSTAmount;
-                                    details.creditTxnRemarksTwo = result[0][0].GSTAccountNarration;                                    
+                                    details.creditTxnRemarksTwo = `${billObject[0].utilityCode}/${result[1][0].GSTINnumber}/${billObject[0].billPeriod}`;                                    
                                     let object = _.pick(details, accountpostingAttributes);
                                     object.reqMsgDateTime = new Date().toISOString();
                                     axios.post(accpostingURL, object).then((accountpostres) => {                                                                                  
