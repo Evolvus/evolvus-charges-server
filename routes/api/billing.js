@@ -688,6 +688,8 @@ function summaryReport(corporateData, bills, gstRate, reportObject) {
       report["Auto Reattempt of Payment Transactions"] = isNullOrUndefined(details['Auto Reattempt of Payment.transactions']) ? details['Auto Reattempt of Payment.transactions'] : 'NA';
       report["Bulk Payment Creation charges/Transaction"] = isNullOrUndefined(details['Bulk Payment Creation.rate']) ? details['Bulk Payment Creation.rate'] : 'NA';
       report["Bulk Payment Creation Transactions"] = isNullOrUndefined(details['Bulk Payment Creation.transactions']) ? details['Bulk Payment Creation.transactions'] : 'NA';
+      report["Bulk ACH Payment Return charges/Transaction"] = isNullOrUndefined(details['Bulk ACH Payment Return.rate']) ? details['Bulk ACH Payment Return.rate'] : 'NA';
+      report["Bulk ACH Payment Return Transactions"] = isNullOrUndefined(details['Bulk ACH Payment Return.transactions']) ? details['Bulk ACH Payment Return.transactions'] : 'NA';
       report["Auto Collection of Payment charges/Transaction"] = isNullOrUndefined(details['Auto Collection of Payment.rate']) ? details['Auto Collection of Payment.rate'] : 'NA';
       report["Auto Collection of Payment Transactions"] = isNullOrUndefined(details['Auto Collection of Payment.transactions']) ? details['Auto Collection of Payment.transactions'] : 'NA';
       report["Total"] = bill.finalChargesAmount;
