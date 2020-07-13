@@ -2,6 +2,7 @@ var debug = require("debug")("evolvus-charges-server:server");
 var corporateLinkage = require("@evolvus/evolvus-charges-corporate-linkage");
 const _ = require("lodash");
 const axios = require("axios");
+const shortid = require("shortid");
 
 const LIMIT = process.env.LIMIT || 20;
 const PAGE_SIZE = 20;
@@ -10,11 +11,12 @@ const ORDER_BY = process.env.ORDER_BY || {
 };
 const userHeader = "X-USER";
 const ipHeader = "X-IP-HEADER";
+const tenantHeader = "X-TENANT-ID";
 
 var corporateURL = process.env.CORPORATE_URL || "http://10.10.69.193:3031/corporateUtilityCodes";
 
 var attributes = ["corporateName", "tenantId", "utilityCode", "chargePlan", "corporateAccount", "billingAddress", "emailId", "GSTINnumber","returnCharges", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
-var filterAttributes = ["corporateName", "utilityCode", "chargePlan"]
+var filterAttributes = ["corporateName", "utilityCode", "chargePlan","processingStatus", "activationStatus"]
 
 var instance = axios.create({
   baseURL: corporateURL,
@@ -29,8 +31,9 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
-      const createdBy = _.get("X-USER", req.header, "KAVYAK");
-      const ipAddress = _.get("X-IP-HEADER", req.header, "192.168.1.18");
+      const tenantId = req.header(tenantHeader);
+      const createdBy = req.header(userHeader);
+      const ipAddress = req.header(ipHeader);
       try {        
         instance.get(corporateURL).then((resp) => {
           if (resp.data && resp.data.data) {
@@ -42,13 +45,14 @@ module.exports = (router) => {
             if (selectedUtility.length != 0) {
               var object = _.pick(req.body, attributes);
               debug(`Input object is: ${JSON.stringify(object)}`);
+              object.tenantId = tenantId;
               object.createdBy = createdBy;
               object.createdDateAndTime = new Date().toISOString();
               object.updatedBy = object.createdBy;
               object.updatedDateAndTime = object.createdDateAndTime;
-              object.tenantId = selectedUtility[0].tenantId;
-              corporateLinkage.save(object, ipAddress, createdBy).then((result) => {
-                response.data = result;
+             // object.tenantId = selectedUtility[0].tenantId;
+             corporateLinkage.save(tenantId, object, ipAddress, createdBy).then((result) => {
+              response.data = result;
                 response.description = `Saved successfully`;
                 res.status(200).send(response);
               }).catch(e => {
@@ -244,6 +248,7 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
+      const tenantId = req.header(tenantHeader);
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       try {
@@ -251,7 +256,7 @@ module.exports = (router) => {
         debug(`Input object is: ${JSON.stringify(object)}`);
         object.updatedBy = createdBy;
         object.updatedDateAndTime = new Date().toISOString();
-        corporateLinkage.update(req.params.utilityCode, object, ipAddress, createdBy).then((result) => {
+        corporateLinkage.update(tenantId,req.params.utilityCode, object, ipAddress, createdBy).then((result) => {
           response.data = result;
           response.description = `Corporate Linkage ${req.params.utilityCode} Updated successfully`;
           res.status(200).send(response);
@@ -269,8 +274,47 @@ module.exports = (router) => {
         res.status(400).send(response);
       }
     });
-};
 
+
+router.route("/private/api/chargeLinkage/:id")
+.put((req, res, next) => {
+  const tenantId = req.header(tenantHeader);
+  const createdBy = req.header(userHeader);
+  const ipAddress = req.header(ipHeader);
+  const response = {
+    "status": "200",
+    "description": "",
+    "data": []
+  };
+  debug("query: " + JSON.stringify(req.query));
+  try {
+    let body = _.pick(req.body, filterAttributes);
+    body.updatedBy = req.header(userHeader);
+    body.lastUpdatedDate = new Date().toISOString();
+    debug(`user workflow update API:Input parameters are: tenantId:${tenantId},ipAddress:${ipAddress},createdBy:${createdBy},id:${req.params.id},updateObject:${JSON.stringify(body)}`);
+    corporateLinkage.updateWorkflow(tenantId, ipAddress, createdBy, req.params.id, body).then((updatedUser) => {
+      response.status = "200";
+      response.description = `${req.params.id} User workflow status has been updated successfully `;
+      response.data = body;
+      res.status(200).json(response);
+    }).catch((e) => {
+      var reference = shortid.generate();
+      debug(`user update workflow promise failed due to ${e} and referenceId:${reference}`);
+      response.status = "400";
+      response.description = `Unable to update User workflow status due to ${e}`;
+      response.data = e.toString()
+      res.status(400).json(response);
+    });
+  } catch (e) {
+    var reference = shortid.generate();
+    debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
+    response.status = "400";
+    response.description = `Unable to update User workflow status due to ${e}`;
+    response.data = e.toString();
+    res.status(400).json(response);
+  }
+});
+};
 
 function sortable(sort) {
   if (typeof sort === 'undefined' ||

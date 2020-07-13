@@ -11,9 +11,10 @@ const ORDER_BY = process.env.ORDER_BY || {
 };
 const userHeader = "X-USER";
 const ipHeader = "X-IP-HEADER";
+const tenantHeader = "X-TENANT-ID";
 
 var chargePlanAttributes = ["name", "chargeCodes", "createdBy", "createdDateAndTime", "updatedBy", "updatedDateAndTime"];
-var filterAttributes = ["name", "chargeCodes"];
+var filterAttributes = ["name", "chargeCodes","processingStatus", "activationStatus"];
 
 module.exports = (router) => {
   router.route('/chargePlan')
@@ -23,16 +24,18 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
+      const tenantId = req.header(tenantHeader);
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       try {
         var object = _.pick(req.body, chargePlanAttributes);
         debug(`Input object is: ${JSON.stringify(object)}`);
+        object.tenantId = tenantId;
         object.createdBy = createdBy;
         object.createdDateAndTime = new Date().toISOString();
         object.updatedBy = object.createdBy;
         object.updatedDateAndTime = object.createdDateAndTime;
-        chargePlan.save(object, ipAddress, createdBy).then((result) => {
+        chargePlan.save(tenantId, object, ipAddress, createdBy).then((result) => {
           response.data = result;
           response.description = "Saved successfully";
           res.status(200).send(response);
@@ -138,6 +141,7 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
+      const tenantId = req.header(tenantHeader);
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       try {
@@ -145,12 +149,13 @@ module.exports = (router) => {
         debug(`Input object is: ${JSON.stringify(object)}`);
         object.updatedBy = createdBy;
         object.updatedDateAndTime = new Date().toISOString();
-        chargePlan.update(req.params.name, object, ipAddress, createdBy).then((result) => {
+        object.processingStatus = "PENDING_AUTHORIZATION";
+        chargePlan.update(tenantId, req.params.name, object, ipAddress, createdBy).then((result) => {
           response.data = result;
-          response.description = `ChargePlan ${req.params.name} Updated successfully`;
+          response.description = `ChargePlan ${req.params.name} Modified successfully`;
           res.status(200).send(response);
         }).catch(e => {
-          debug(`Updating ChargePlan promise failed: ${e}`);
+          debug(`Modified ChargePlan promise failed: ${e}`);
           response.status = "400";
           response.data = e.toString();
           response.description = "Failed to update";
@@ -163,6 +168,47 @@ module.exports = (router) => {
         res.status(400).send(response);
       }
     });
+
+
+    router.route("/private/api/chargePlan/:id")
+    .put((req, res, next) => {
+      const tenantId = req.header(tenantHeader);
+      const createdBy = req.header(userHeader);
+      const ipAddress = req.header(ipHeader);
+      const response = {
+        "status": "200",
+        "description": "",
+        "data": []
+      };
+      debug("query: " + JSON.stringify(req.query));
+      try {
+        let body = _.pick(req.body, filterAttributes);
+        body.updatedBy = req.header(userHeader);
+        body.lastUpdatedDate = new Date().toISOString();
+        debug(`user workflow update API:Input parameters are: tenantId:${tenantId},ipAddress:${ipAddress},createdBy:${createdBy},id:${req.params.id},updateObject:${JSON.stringify(body)}`);
+        chargePlan.updateWorkflow(tenantId, ipAddress, createdBy, req.params.id, body).then((updatedUser) => {
+          response.status = "200";
+          response.description = `${req.params.id} User workflow status has been updated successfully `;
+          response.data = body;
+          res.status(200).json(response);
+        }).catch((e) => {
+          var reference = shortid.generate();
+          debug(`user update workflow promise failed due to ${e} and referenceId:${reference}`);
+          response.status = "400";
+          response.description = `Unable to update User workflow status due to ${e}`;
+          response.data = e.toString()
+          res.status(400).json(response);
+        });
+      } catch (e) {
+        var reference = shortid.generate();
+        debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
+        response.status = "400";
+        response.description = `Unable to update User workflow status due to ${e}`;
+        response.data = e.toString();
+        res.status(400).json(response);
+      }
+    });
+
 };
 
 function sortable(sort) {

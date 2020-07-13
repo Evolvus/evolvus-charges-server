@@ -1,6 +1,6 @@
 {
   "name": "@evolvus/evolvus-charges-service",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "server.js",
   "scripts": {
@@ -10,10 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@evolvus/evolvus-charges-billing": "^1.0.38",
+    "@evolvus/evolvus-charges-billing": "^1.0.39",
     "@evolvus/evolvus-charges-charge-code": "^1.0.15",
-    "@evolvus/evolvus-charges-charge-plan": "^1.0.13",
-    "@evolvus/evolvus-charges-corporate-linkage": "^1.0.22",
+    "@evolvus/evolvus-charges-charge-plan": "^1.0.14",
+    "@evolvus/evolvus-charges-corporate-linkage": "^1.0.23",
     "@evolvus/evolvus-charges-gl-parameters": "^1.0.8",
     "@evolvus/evolvus-charges-scheme-type": "^1.0.4",
     "@evolvus/evolvus-charges-transaction-type": "^1.0.6",

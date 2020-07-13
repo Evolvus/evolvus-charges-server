@@ -248,8 +248,11 @@ module.exports = (router) => {
       const ipAddress = req.header(ipHeader);
       try {
         debug("Bill generation Initiated.");
+        var processingFilter = {
+          processingStatus : "AUTHORIZED"
+        };
         let generatedBills = [];
-        corporateLinkage.find({}, {}, 0, 0, ipAddress, createdBy).then(corporates => {
+        corporateLinkage.find(processingFilter, {}, 0, 0, ipAddress, createdBy).then(corporates => {
           debug(`Number of corporates found is: ${corporates.length}`);
           if (corporates.length > 0) {
             Promise.all(corporates.map(corporate => {
