@@ -256,6 +256,7 @@ module.exports = (router) => {
         debug(`Input object is: ${JSON.stringify(object)}`);
         object.updatedBy = createdBy;
         object.updatedDateAndTime = new Date().toISOString();
+        object.processingStatus = "PENDING_AUTHORIZATION";
         corporateLinkage.update(tenantId,req.params.utilityCode, object, ipAddress, createdBy).then((result) => {
           response.data = result;
           response.description = `Corporate Linkage ${req.params.utilityCode} Updated successfully`;
