@@ -11,7 +11,6 @@ const ORDER_BY = process.env.ORDER_BY || {
 };
 const userHeader = "X-USER";
 const ipHeader = "X-IP-HEADER";
-const tenantHeader = "X-TENANT-ID";
 
 var corporateURL = process.env.CORPORATE_URL || "http://10.10.69.193:3031/corporateUtilityCodes";
 
@@ -31,7 +30,6 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
-      const tenantId = req.header(tenantHeader);
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       try {        
@@ -45,13 +43,12 @@ module.exports = (router) => {
             if (selectedUtility.length != 0) {
               var object = _.pick(req.body, attributes);
               debug(`Input object is: ${JSON.stringify(object)}`);
-              object.tenantId = tenantId;
               object.createdBy = createdBy;
               object.createdDateAndTime = new Date().toISOString();
               object.updatedBy = object.createdBy;
               object.updatedDateAndTime = object.createdDateAndTime;
-             // object.tenantId = selectedUtility[0].tenantId;
-             corporateLinkage.save(tenantId, object, ipAddress, createdBy).then((result) => {
+              object.tenantId = selectedUtility[0].tenantId;
+             corporateLinkage.save(object.tenantId, object, ipAddress, createdBy).then((result) => {
               response.data = result;
                 response.description = `Saved successfully`;
                 res.status(200).send(response);
@@ -248,16 +245,24 @@ module.exports = (router) => {
         data: {},
         description: ""
       };
-      const tenantId = req.header(tenantHeader);
       const createdBy = req.header(userHeader);
       const ipAddress = req.header(ipHeader);
       try {
+        var limit = _.get(req.query, "limit", LIMIT);
+        var skipCount = 0;
+        var sort = _.get(req.query, "sort", {});
+        var orderby = sortable(sort);
         var object = _.pick(req.body, attributes);
         debug(`Input object is: ${JSON.stringify(object)}`);
         object.updatedBy = createdBy;
         object.updatedDateAndTime = new Date().toISOString();
         object.processingStatus = "PENDING_AUTHORIZATION";
-        corporateLinkage.update(tenantId,req.params.utilityCode, object, ipAddress, createdBy).then((result) => {
+        var filterCode = {
+          "utilityCode": req.params.utilityCode
+        };
+          corporateLinkage.find(filterCode, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
+          const tenantId = result[0].tenantId;
+          corporateLinkage.update(tenantId,req.params.utilityCode, object, ipAddress, createdBy).then((result) => {
           response.data = result;
           response.description = `Corporate Linkage ${req.params.utilityCode} Updated successfully`;
           res.status(200).send(response);
@@ -268,6 +273,12 @@ module.exports = (router) => {
           response.description = "Failed to Update";
           res.status(400).send(response);
         });
+        }).catch(e => {
+        response.status = "400";
+        response.data = e.toString();
+        response.description = "Failed to fetch corporate linkage records.";
+        res.status(400).send(response);
+      });
       } catch (e) {
         response.status = "400";
         response.data = e;
@@ -279,7 +290,6 @@ module.exports = (router) => {
 
 router.route("/private/api/chargeLinkage/:id")
 .put((req, res, next) => {
-  const tenantId = req.header(tenantHeader);
   const createdBy = req.header(userHeader);
   const ipAddress = req.header(ipHeader);
   const response = {
@@ -289,9 +299,18 @@ router.route("/private/api/chargeLinkage/:id")
   };
   debug("query: " + JSON.stringify(req.query));
   try {
+    var limit = _.get(req.query, "limit", LIMIT);
+    var skipCount = 0;
+    var sort = _.get(req.query, "sort", {});
+    var orderby = sortable(sort);
     let body = _.pick(req.body, filterAttributes);
     body.updatedBy = req.header(userHeader);
     body.lastUpdatedDate = new Date().toISOString();
+    var filterCode = {
+      "_id": req.params.id
+    };
+    corporateLinkage.find(filterCode, orderby, skipCount, limit, ipAddress, createdBy).then((result) => {
+    const tenantId = result[0].tenantId;
     debug(`user workflow update API:Input parameters are: tenantId:${tenantId},ipAddress:${ipAddress},createdBy:${createdBy},id:${req.params.id},updateObject:${JSON.stringify(body)}`);
     corporateLinkage.updateWorkflow(tenantId, ipAddress, createdBy, req.params.id, body).then((updatedUser) => {
       response.status = "200";
@@ -306,7 +325,14 @@ router.route("/private/api/chargeLinkage/:id")
       response.data = e.toString()
       res.status(400).json(response);
     });
-  } catch (e) {
+   }).catch(e => {
+    response.status = "400";
+    response.data = e.toString();
+    response.description = "Failed to fetch corporate linkage records.";
+    res.status(400).send(response);
+  });
+  }
+   catch (e) {
     var reference = shortid.generate();
     debug(`try catch promise failed due to ${e} and referenceId:${reference}`);
     response.status = "400";
