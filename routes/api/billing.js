@@ -695,6 +695,19 @@ function summaryReport(corporateData, bills, gstRate, reportObject) {
       report["Bulk ACH Payment Return Transactions"] = isNullOrUndefined(details['Bulk ACH Payment Return.transactions']) ? details['Bulk ACH Payment Return.transactions'] : 'NA';
       report["Auto Collection of Payment charges/Transaction"] = isNullOrUndefined(details['Auto Collection of Payment.rate']) ? details['Auto Collection of Payment.rate'] : 'NA';
       report["Auto Collection of Payment Transactions"] = isNullOrUndefined(details['Auto Collection of Payment.transactions']) ? details['Auto Collection of Payment.transactions'] : 'NA';
+      report["Bulk ESIGN Creation charges/Transaction"] = isNullOrUndefined(details['Bulk ESIGN Creation.rate']) ? details['Bulk ESIGN Creation.rate'] : 'NA';
+      report["Bulk ESIGN Creation Transactions"] = isNullOrUndefined(details['Bulk ESIGN Creation.transactions']) ? details['Bulk ESIGN Creation.transactions'] : 'NA';
+      report["Bulk ESIGN Amendment charges/Transaction"] = isNullOrUndefined(details['Bulk ESIGN Amendment.rate']) ? details['Bulk ESIGN Amendment.rate'] : 'NA';
+      report["Bulk ESIGN Amendment Transactions"] = isNullOrUndefined(details['Bulk ESIGN Amendment.transactions']) ? details['Bulk ESIGN Amendment.transactions'] : 'NA';
+      report["Bulk ESIGN Cancelation charges/Transaction"] = isNullOrUndefined(details['Bulk ESIGN Cancelation.rate']) ? details['Bulk ESIGN Cancelation.rate'] : 'NA';
+      report["Bulk ESIGN Cancelation Transactions"] = isNullOrUndefined(details['Bulk ESIGN Cancelation.transactions']) ? details['Bulk ESIGN Cancelation.transactions'] : 'NA';
+      report["Bulk E-mandate Creation charges/Transaction"] = isNullOrUndefined(details['Bulk E-mandate Creation.rate']) ? details['Bulk E-mandate Creation.rate'] : 'NA';
+      report["Bulk E-mandate Creation Transactions"] = isNullOrUndefined(details['Bulk E-mandate Creation.transactions']) ? details['Bulk E-mandate Creation.transactions'] : 'NA';
+      report["Bulk E-mandate Amendment charges/Transaction"] = isNullOrUndefined(details['Bulk E-mandate Amendment.rate']) ? details['Bulk E-mandate Amendment.rate'] : 'NA';
+      report["Bulk E-mandate Amendment Transactions"] = isNullOrUndefined(details['Bulk E-mandate Amendment.transactions']) ? details['Bulk E-mandate Amendment.transactions'] : 'NA';
+      report["Bulk E-mandate Cancelation charges/Transaction"] = isNullOrUndefined(details['Bulk E-mandate Cancelation.rate']) ? details['Bulk E-mandate Cancelation.rate'] : 'NA';
+      report["Bulk E-mandate Cancelation Transactions"] = isNullOrUndefined(details['Bulk E-mandate Cancelation.transactions']) ? details['Bulk E-mandate Cancelation.transactions'] : 'NA';
+
       report["Total"] = bill.finalChargesAmount;
       report[`CGST@${gst}%`] = bill.finalGSTAmount / 2;
       report[`SGST@${gst}%`] = bill.finalGSTAmount / 2;
