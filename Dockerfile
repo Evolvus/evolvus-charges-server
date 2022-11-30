@@ -1,6 +1,6 @@
 FROM node:8.9-wheezy
 
-RUN npm install pm2 -g
+RUN npm install pm2@4.2.1 -g
 # ENV PM2_PUBLIC_KEY XXXX
 # ENV PM2_SECRET_KEY YYYY
 COPY . /usr/app-charges-server/
